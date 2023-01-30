@@ -1,6 +1,6 @@
 SRCS = ./srcs/main.cpp
 
-CPP = c++
+CPP = clang++
 
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
