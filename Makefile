@@ -1,6 +1,6 @@
-SRCS = ./srcs/main.cpp
+SRCS = ./srcs/*.cpp
 
-CPP = clang++
+CPP = c++
 
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
@@ -16,7 +16,7 @@ $(NAME): $(SRCS) $(HEADERS)
 
 fclean: rm -f $(NAME)
 
-clean: fclean
+clean: rm fclean
 
 re: fclean all
 

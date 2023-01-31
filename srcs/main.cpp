@@ -1,34 +1,10 @@
-# include <sstream>
-# include <string>
-# include <cstring>
-# include <unistd.h>
-# include <sys/types.h>
-# include <sys/socket.h>
-# include <arpa/inet.h>
-# include <netinet/in.h>
-# include <netdb.h>
-# include <map>
-# include <set>
-# include <csignal>
-# include <vector>
-# include <algorithm>
-# include <sys/time.h>
-# include <sstream>
-# include <iostream>
-
-
-
-bool work = true;
+# include "../headers/irc.hpp"
 
 struct port_password {
     int         port;
     std::string password;
 };
 
-void sigHandler(int num) {
-    (void)num;
-    work = false;
-}
 
 port_password parser(int argc, char **argv) {
     port_password input;
@@ -47,20 +23,43 @@ port_password parser(int argc, char **argv) {
     return input;
 }
 
-
-
 int main(int argc, char **argv) {
 
     if (argc != 3) {
         std::cout << "Wrong input" << std::endl;
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     port_password input = parser(argc, argv);
 
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0); //IPV4 TCP
+    // SIMPLE SENDING CHECK
+/*  char buf[4096];
+    struct sockaddr_in client;
+    socklen_t client_size = sizeof(client);
+    int socketClient = accept(serverSocket, (struct sockaddr*)&client, &client_size);
 
-    if (sockfd == -1) {
+    if (socketClient < 0) {
+        std::cout << "Failed to create accept with socketClient" << std::endl;
+        exit(EXIT_FAILURE);
+
+        //TODO HANDLE ERROR
+    }
+    while (work) {
+        memset(buf, 0, 4096);
+
+        int bytes = recv(socketClient, buf, 4096, 0);
+
+        std::cout << std::string(buf, 0, bytes) << std::endl;
+
+        send(socketClient, buf, bytes + 1, 0);
+    }
+*/
+
+    server(input.port, input.password);
+
+/*    int serverSocket = socket(AF_INET, SOCK_STREAM, 0); //IPV4 TCP
+
+    if (serverSocket == -1) {
         std::cout << "Failed to create a socket" << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -71,30 +70,83 @@ int main(int argc, char **argv) {
     addrServer.sin_family = AF_INET;
     addrServer.sin_port = htons(input.port);
 
-    if (bind(sockfd, (struct sockaddr*)&addrServer, sizeof(sockaddr)) < 0) {
+    if (bind(serverSocket, (struct sockaddr*)&addrServer, sizeof(sockaddr)) < 0) {
         std::cout << "Failed to bind the socket" << std::endl;
-        close(sockfd);
+        close(serverSocket);
         exit(EXIT_FAILURE);
     }
 
-    if (listen(sockfd, SOMAXCONN) < 0) {
+    if (listen(serverSocket, SOMAXCONN) < 0) {
         std::cout << "Failed to listen the socket" << std::endl;
         exit(EXIT_FAILURE);
     }
 
+    struct timeval timeout;
+
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 5;
+
+    fd_set master;
+    fd_set read;
+    fd_set write;
+
+    FD_ZERO(&master);
+    FD_SET(serverSocket, &master);
+
     while (work) {
-        int socketClient;
-        struct sockaddr_in addrClient;
-        socklen_t  csize = sizeof(addrClient);
 
-        socketClient = accept(sockfd, (struct sockaddr *)&addrClient, &csize);
-        if (socketClient < 0) {
+        // make read/write sockets to all current sockets
+        read = master;
+        write = master;
+
+        if (select(FD_SETSIZE, &read, &write, NULL, &timeout) == -1) {
+            std::cout << "Failed to select()" << std::endl;
             exit(EXIT_FAILURE);
+            //TODO handle memory errors and other staff
+        } else {
+            for (int i = 0; i < FD_SETSIZE; i++) {
+                if (FD_ISSET(i, &read)) {
+
+                    // accept new connection
+                    if (i == serverSocket) {
+                        int clientSocket = acceptConnection(serverSocket);
+                        FD_SET(clientSocket, &master);
+
+                        std::string welcomeMsg = "Welcome to the Awesome Chat Server!\n";
+                        send(clientSocket, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
+                    } else {
+
+                        // receive
+                        char buf[4096];
+                        memset(buf, 0, 4096);
+
+                        int bytes = recv(i, buf, 4096, 0);
+                        std::cout << std::string(buf, 0, bytes) << std::endl;
+
+                    }
+                }
+
+                if (FD_ISSET(i, &write)) {
+                    // send
+                    continue;
+                }
+
+                else {
+                    // NO SUCH SOCKET IN READ/WRITE SOCKETS POLL
+                    continue;
+                }
+            }
         }
-
-        char buffer[100];
-
     }
+*/
+
+//    std::cout << "HERE" << std::endl;
+//    FD_CLR(serverSocket, &master);
+//    close(serverSocket);
+//
+//    FD_ZERO(&master);
+//    FD_ZERO(&read);
+//    FD_ZERO(&write);
 
     return 0;
 }

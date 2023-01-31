@@ -91,7 +91,7 @@ int acceptConnection(int socketServer, std::map<int, User> &userMap)
 	memset(service, 0, NI_MAXSERV);
 	if (getnameinfo((sockaddr*)&addrClient, csize, host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
 	{
-		std::cout << host << " connected on port " << service << std::endl;
+		std::cout << host << " HHHHHH connected on port " << service << std::endl;
 		userMap[socketClient].setHostname(host);
 	}
 	else
