@@ -32,6 +32,10 @@ int main(int argc, char **argv) {
 
     port_password input = parser(argc, argv);
 
+    Server server(input.port, input.password);
+
+    server.execute();
+
     // SIMPLE SENDING CHECK
 /*  char buf[4096];
     struct sockaddr_in client;
@@ -55,7 +59,6 @@ int main(int argc, char **argv) {
     }
 */
 
-    server(input.port, input.password);
 
 /*    int serverSocket = socket(AF_INET, SOCK_STREAM, 0); //IPV4 TCP
 

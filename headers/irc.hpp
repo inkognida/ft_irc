@@ -15,5 +15,6 @@
 # include <sys/time.h>
 # include <sstream>
 # include <iostream>
-
-void server(int port, std::string password);
+# include "User.hpp"
+# include "Server.hpp"
+# include <fcntl.h>

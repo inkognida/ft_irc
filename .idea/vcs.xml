@@ -11,5 +11,6 @@
     <mapping directory="$PROJECT_DIR$/examples/irc1" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/irc2" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/irca" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/examples/ircf" vcs="Git" />
   </component>
 </project>
