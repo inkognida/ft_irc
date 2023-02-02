@@ -24,6 +24,10 @@ std::vector<std::string> splitMsg(std::string content)
 		clientMsg.push_back(line);
 		line = strtok(NULL, "\r \n");
 	}
+
+    for (size_t i = 0; i < clientMsg.size(); i++)
+        std::cout << clientMsg[i];
+
 	delete[] words;
 	return (clientMsg);
 }

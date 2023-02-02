@@ -128,8 +128,6 @@ void	handleConnection(int socketClient, fd_set *currentSockets, std::map<int, Us
         current.appendCommand(buffer);
 		sentence = current.deliverCommand();
 
-        std::cout << sentence << " HERE" << std::endl;
-
 		while (!sentence.empty())
         {
             if (getClientMsg(socketClient, sentence, userMap, channelMap))

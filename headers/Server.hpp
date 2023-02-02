@@ -21,7 +21,7 @@ public:
     //extra
     void    simpleErrorExit(std::string);
 
-
+    int     getSocket(void) { return this->serverSocket; }
 
 private:
     std::string password;

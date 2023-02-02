@@ -34,8 +34,8 @@ private:
     std::vector <std::string>   commandsParsed;
     std::string                 commandsToParse;
 
-    std::vector<std::string>    commandsAvaliable;
 
+    std::map <std::string, int>   commands;
 };
 
 #endif

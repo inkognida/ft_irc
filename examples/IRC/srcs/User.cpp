@@ -105,6 +105,10 @@ int		User::readMessage()
 		text.replace(text.find("\r\n"), 2, "\n");
 	if (text.size() > 1)
 		messages = split(text, '\n', true);
+
+    for (size_t i = 0; i < messages.size(); i ++ ) {
+        std::cout << messages[i];
+    }
 	return 0;
 }
 

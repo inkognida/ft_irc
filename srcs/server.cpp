@@ -91,10 +91,10 @@ void    Server::quitConnection(std::string reason, int userSocket) {
 }
 
 void    Server::handleConnection(int userSocket) {
-    char buffer[510];
+    char buffer[4096];
 
-    memset(buffer, 0, 510);
-    int readBytes = recv(userSocket, buffer, 510, 0);
+    memset(buffer, 0, 4096);
+    int readBytes = recv(userSocket, buffer, 4096, 0);
 
     if (readBytes == -1)
         quitConnection("crushed", userSocket);
@@ -102,8 +102,9 @@ void    Server::handleConnection(int userSocket) {
         quitConnection("closed", userSocket);
     else {
         Users[userSocket].setCommandsToParse(std::string(buffer, 0, readBytes));
+//        FD_CLR(userSocket, &master);
     }
-//    std::cout << Users[userSocket].getToParse();
+    memset(buffer, 0, 4096);
 }
 
 void    Server::simpleErrorExit(std::string error) {
@@ -126,17 +127,16 @@ void Server::execute() {
         if (select(FD_SETSIZE, &readSockets, &writeSockets, NULL, &timeout) == -1) {
             close(serverSocket);
             simpleErrorExit("Failed to select()");
-        } else {
-            for (int i = 0; i < FD_SETSIZE; i++) {
-                if (FD_ISSET(i, &readSockets)) {
-                    if (i == serverSocket)
-                        acceptConnection();
-                    else
-                        handleConnection(i);
-                }
-                if (FD_ISSET(i, &writeSockets) && !Users[i].getMessage().empty())
-                    sendConnection(i);
+        }
+        for (int i = 0; i < FD_SETSIZE; i++) {
+            if (FD_ISSET(i, &readSockets)) {
+                if (i == serverSocket)
+                    acceptConnection();
+                else
+                    handleConnection(i);
             }
+            if (FD_ISSET(i, &writeSockets) && !Users[i].getMessage().empty())
+                sendConnection(i);
         }
     }
 }
