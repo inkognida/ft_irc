@@ -91,7 +91,7 @@ int acceptConnection(int socketServer, std::map<int, User> &userMap)
 	memset(service, 0, NI_MAXSERV);
 	if (getnameinfo((sockaddr*)&addrClient, csize, host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
 	{
-		std::cout << host << " HHHHHH connected on port " << service << std::endl;
+		std::cout << host << " connected on port " << service << std::endl;
 		userMap[socketClient].setHostname(host);
 	}
 	else
@@ -128,7 +128,7 @@ void	handleConnection(int socketClient, fd_set *currentSockets, std::map<int, Us
         current.appendCommand(buffer);
 		sentence = current.deliverCommand();
 
-		while (!sentence.empty())
+		if (!sentence.empty())
         {
             if (getClientMsg(socketClient, sentence, userMap, channelMap))
             {
@@ -137,6 +137,7 @@ void	handleConnection(int socketClient, fd_set *currentSockets, std::map<int, Us
             }
             sentence = current.deliverCommand();
         }
+
 	}
 	return ;
 }

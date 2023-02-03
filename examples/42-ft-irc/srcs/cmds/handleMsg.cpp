@@ -14,19 +14,16 @@
 
 std::vector<std::string> splitMsg(std::string content)
 {
-	char *words = new char [content.length()+1]; //to copy string to chat to use strtok
+    char *words = new char [content.length()+1]; //to copy string to chat to use strtok
 	std::strcpy(words, content.c_str()); 		//copy all client infos in words (cap, nick, user)
 	char *line = strtok(words, " ");			//split words into tokens with " "
 	std::vector<std::string> clientMsg;			//create tab with client infos
-	
+
 	while(line != NULL)
 	{
 		clientMsg.push_back(line);
 		line = strtok(NULL, "\r \n");
 	}
-
-    for (size_t i = 0; i < clientMsg.size(); i++)
-        std::cout << clientMsg[i];
 
 	delete[] words;
 	return (clientMsg);
@@ -34,7 +31,7 @@ std::vector<std::string> splitMsg(std::string content)
 
 bool	getClientMsg(int socketClient, std::string content, std::map<int, User> &userMap, std::map<std::string, Channel> &channelMap)
 {
-	std::vector<std::string> clientMsg;
+    std::vector<std::string> clientMsg;
 	clientMsg = splitMsg(content);
 	std::vector<std::string>::iterator it = clientMsg.begin();
 	User	&user = userMap.find(socketClient)->second;

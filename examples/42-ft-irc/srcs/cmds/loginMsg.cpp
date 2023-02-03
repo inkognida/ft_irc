@@ -118,3 +118,30 @@ bool	identServer(std::string &ident)
 	}
 		return false;
 }
+
+bool	userHandle(int socketClient, std::vector<std::string> &username, std::map<int, User> &userMap)
+{
+	User	&current = userMap[socketClient];
+
+	if (!current.getUsername().empty())
+	{
+		numericReply(ERR_ALREADYREGISTERED, socketClient, userMap, NULL);
+		return (0);
+	}
+	if (username.size() < 5)
+	{
+		numericReply(ERR_NEEDMOREPARAMS, socketClient, userMap, &username[0]);
+		//userMap.erase(socketClient);
+		return (0);
+	}
+	if (!identServer(username[1]))
+		username[1].insert(username[1].begin(), '~');
+	current.setUsername(username[1]);
+	delColon(username[4]);
+	if (username[4].empty())
+		username[4].assign("Gordon Freeman");
+	current.setRealname(username[4]);
+	if (fullyRegistered(current))
+	numericReply(RPL_WELCOME, socketClient, userMap, NULL);
+	return (0);
+}

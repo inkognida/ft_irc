@@ -5,6 +5,8 @@ class User;
 
 # include "irc.hpp"
 
+#define SERVER ":PUSSY "
+
 class Server {
 
 public:
@@ -21,25 +23,39 @@ public:
     //extra
     void    simpleErrorExit(std::string);
 
+    // getters
     int     getSocket(void) { return this->serverSocket; }
 
+    // parse
+    void                        parseCommands(std::string);
+
+    // execution
+    void                        PASS(User&);
+    void                        NICK(User&);
+
+    //tools for execution
+    int                         correctNICK(std::string);
+    void                        backMSG(User&, int, std::string);
 private:
-    std::string password;
-    int         port;
+    std::string                         password;
+    int                                 port;
 
-    int         serverSocket;
-    sockaddr_in serverAddress;
+    int                                 serverSocket;
+    sockaddr_in                         serverAddress;
 
-    fd_set      master;
-    fd_set      readSockets;
-    fd_set      writeSockets;
+    fd_set                              master;
+    fd_set                              readSockets;
+    fd_set                              writeSockets;
 
-    timeval     timeout;
+    timeval                             timeout;
 
-    std::map<int, User> Users;
+    std::map<int, User>                 Users;
 
-    int         clientSocket;
-    sockaddr_in clientAddress;
+    std::vector <std::string>           commandsParse;
+    std::map <std::string, int>         commands;
+
+    int                                 clientSocket;
+    sockaddr_in                         clientAddress;
 };
 
 #endif
