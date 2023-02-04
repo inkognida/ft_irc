@@ -15,11 +15,12 @@ public:
     std::string getPassword() const { return this->password; };
     std::string getNickname() const { return this->nickname; };
     std::string getUser() const { return this->user; };
+    std::string getMode() const { return this->mode; };
+    std::string getUnused() const { return this->unused; };
+    std::string getRealname() const { return this->realname; };
     std::string getMessage() const { return this->message; };
     std::string getBackMSG() const { return this->backMsg; };
     std::string getCmd() const { return this->cmd; };
-
-
 
     void                setSocket(int);
     void                setHostname(std::string);
@@ -29,8 +30,14 @@ public:
     void                setPassword(std::string);
     void                setNickname(std::string);
     void                setUser(std::string);
+    void                setMode(std::string);
+    void                setUnused(std::string);
+    void                setRealname(std::string);
+
     void                setMessage(std::string);
     void                setBackMSG(std::string);
+
+    void                clearBackMSG() { this->backMsg.clear(); };
 private:
     int                         socket;
     std::string                 hostname;
@@ -38,7 +45,10 @@ private:
 
     std::string                 password;
     std::string                 nickname;
-    std::string                 user; // TODO user mode unused realname, mode, etc...
+    std::string                 user;
+    std::string                 mode;
+    std::string                 unused;
+    std::string                 realname;
 
     std::string                 message;
     std::string                 backMsg;

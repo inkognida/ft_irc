@@ -23,6 +23,12 @@ Server::Server(int port_, std::string password_) {
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
 
+    int on = 1;
+    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(int)) < 0) {
+        close(serverSocket);
+        simpleErrorExit("Failed to setsockopt");
+    }
+
     if (bind(serverSocket, (struct sockaddr *) &serverAddress, sizeof(sockaddr)) < 0) {
         close(serverSocket);
         simpleErrorExit("Failed to bind the socket");
@@ -33,8 +39,12 @@ Server::Server(int port_, std::string password_) {
         simpleErrorExit("Failed to listen the socket");
     }
 
-//    server hostname -> output on server
-/*    char host[NI_MAXHOST];
+    if (fcntl(serverSocket, F_SETFL, O_NONBLOCK) < 0) {
+        close(serverSocket);
+        simpleErrorExit("Failed to fcntl");
+    }
+
+    char host[NI_MAXHOST];
     char service[NI_MAXSERV];
     memset(host, 0, NI_MAXHOST);
     memset(service, 0, NI_MAXSERV);
@@ -45,11 +55,8 @@ Server::Server(int port_, std::string password_) {
         else
             std::cout << host << " SERVER PORT : " << service << std::endl;
     }
-    else {
-        std::cerr << "can't get server information ?? \n";
-        exit(EXIT_FAILURE);
-    }
-*/
+    else
+        simpleErrorExit("Can't get server info");
 
     FD_ZERO(&readSockets);
     FD_ZERO(&writeSockets);
@@ -60,6 +67,9 @@ Server::Server(int port_, std::string password_) {
     commands["PASS"] = 1;
     commands["NICK"] = 2;
     commands["USER"] = 3;
+    commands["PRIVMSG"] = 4;
+    commands["PING"] = 5;
+    commands["NOTICE"] = 6;
 }
 
 Server::~Server() {
@@ -117,86 +127,72 @@ void    Server::quitConnection(std::string reason, int userSocket) {
 
 void    Server::backMSG(User &user, int code, std::string cmd) {
     switch (code) {
-        case 001:
+        case RPL_WELCOME:
             user.setBackMSG(std::string("Welcome to the ") + SERVER + std::to_string(code) +
             std::string(" Network") + user.getNickname() +
             "!" +user.getUser() + "@" + user.getHostname()); // TODO data of creation server, code 004, 005, fix CODE
             return ;
-        case 461:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " wrong parameters, use PASS [arg]");
+        case ERR_NEEDMOREPARAMS:
+            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " wrong parameters");
             return ;
-        case 462:
+        case ERR_ALREADYREGISTERED:
             user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Unauthorized command (already registered)");
             return ;
-        case 464:
+        case ERR_PASSWDMISMATCH:
             user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Password incorrect");
             return ;
-        case 431:
+        case ERR_NONICKNAMEGIVEN:
             user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " no nickname given, use NICK [arg]");
             return ;
-        case 432:
+        case ERR_ERRONEUSNICKNAME:
             user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Erroneous nickname");
             return ;
-        case 433:
+        case ERR_NICKNAMEINUSE:
             user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Nickname is already in use");
             return ;
+        case ERR_NOTREGISTERED:
+            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " You need to be registered (custom error)");
+        case ERR_NOORIGIN:
+            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " No origin specified");
     }
 }
 
-void    Server::PASS(User &user) {
-    if (commandsParse.size() != 2)
-        backMSG(user, 461, user.getCmd());
-    else if (!user.getPassword().empty() && !user.getNickname().empty() &&
-        !user.getUser().empty()) {
-        backMSG(user, 462, user.getCmd());
+void    Server::PING(User &user, std::string content) {
+    if (commandsParse.size() < 2) {
+        backMSG(user, ERR_NOORIGIN, user.getCmd());
+        return ;
     }
-    else if (commandsParse[1] != password)
-        backMSG(user, 464, user.getCmd());
-    else
-        user.setPassword(password);
+    user.setBackMSG(SERVER + std::string("PONG ") + content.substr(commandsParse[0].size() + 1, content.size()) + "\n");
 }
 
-int    Server::correctNICK(std::string nick) {
-    if (nick.size() > 20) {
-        return 1;
+void    Server::PRIVMSG(User &user, std::string content) {
+    if (commandsParse[1].empty()) {
+        backMSG(user, ERR_NORECIPIENT, user.getCmd());
+        return ;
+    }
+    if (commandsParse[2].empty()) {
+        backMSG(user, ERR_NOTEXTTOSEND, user.getCmd());
+        return ;
     }
 
-    for (size_t i = 0; i < nick.size(); i++) {
-        if (!isalpha(nick[i]) && !isdigit(nick[i]) && nick[i] != '_')
-            return 1;
-    }
-
-    // TODO doesnt work with multiple nicknames sending from one socket -> need to fix
     std::map<int, User>::iterator begin = Users.begin();
     std::map<int, User>::iterator end = Users.end();
 
     while (begin != end) {
-        if (begin->second.getNickname() == nick)
-            return 2;
+        if (begin->second.getNickname() == commandsParse[1]) {
+            begin->second.setBackMSG(content.substr(commandsParse[0].size() + commandsParse[1].size() + 2, content.size()) + "\n");
+            user.setBackMSG(content.substr(commandsParse[0].size() + commandsParse[1].size() + 2, content.size()) + "\n");
+            return ;
+        }
         begin++;
     }
 
-    return 3;
+    backMSG(user, ERR_NORECIPIENT, user.getCmd());
+    return ;
 }
 
-void    Server::NICK(User &user) {
-    if (commandsParse.size() != 2) {
-        backMSG(user, 431, user.getCmd());
-        return ;
-    }
-
-    switch (correctNICK(commandsParse[1])) {
-        case 1:
-            backMSG(user, 432, user.getCmd());
-            return ;
-        case 2:
-            backMSG(user, 433, user.getCmd());
-            return ;
-        case 3:
-            user.setNickname(commandsParse[1]);
-            return ;
-    }
-    // TODO blocked nicknames
+void    Server::NOTICE(User &, std::string) {
+    return ; //TODO implement this func
 }
 
 void Server::parseCommands(std::string content) {
@@ -205,6 +201,7 @@ void Server::parseCommands(std::string content) {
     content.erase( std::remove(content.begin(), content.end(), '\n'), content.end());
 
     if (!content.empty()) {
+        std::string content_ = content; // PRIVMSG text argument
         char *tmp = std::strtok(const_cast<char*>(content.c_str()), " ");
 
         while (tmp != nullptr) {
@@ -216,27 +213,36 @@ void Server::parseCommands(std::string content) {
         user.setCmd(commandsParse[0]);
 
         if (!cmd)
-            exit(EXIT_FAILURE); // TODO unknown command send some message
+            return ;
 
-        if (cmd > 3 && (user.getPassword().empty() || user.getNickname().empty()
+        if (cmd > 666 && (user.getPassword().empty() || user.getNickname().empty() // TODO turn on the auth process (666) / add REGISTRATION flag for RPL_WELCOME
                         || user.getUser().empty())) {
-            std::cout << "No registration" << std::endl;
-        } // TODO return message about no registration process
+            backMSG(user, ERR_NOTREGISTERED, user.getCmd());
+            std::cout << user.getBackMSG() << std::endl;
+            user.clearBackMSG();
+            return ;
+        }
+
         switch (cmd) {
             case 1:
                 PASS(user);
                 break   ;
             case 2:
                 NICK(user);
-                std::cout << user.getBackMSG() << std::endl; // showing current output from backMSG
+                break ;
+            case 3:
+                USER(user);
+                break ;
+            case 4:
+                PRIVMSG(user, content_);
+                break ;
+            case 5:
+                PING(user, content_);
+                break ;
+            case 6:
+                NOTICE(user, content_);
                 break ;
         }
-
-//        for (size_t i = 0; i < commandsParse.size(); i++) {
-//            std::cout << commandsParse[i];
-//        }
-
-        commandsParse.clear();
     }
 }
 
@@ -252,6 +258,7 @@ void    Server::handleConnection(int userSocket) {
         quitConnection("closed", userSocket);
     else {
         parseCommands(std::string(buffer).c_str());
+        commandsParse.clear();
         memset(buffer, 0, 4096);
     }
 }
@@ -263,10 +270,10 @@ void    Server::simpleErrorExit(std::string error) {
 
 
 void    Server::sendConnection(int userSocket) {
-    std::cout << "msg sent: " << Users[userSocket].getMessage() << std::endl;
-    send(userSocket, Users[userSocket].getMessage().c_str(),
-         Users[userSocket].getMessage().size(), 0);
-    Users[userSocket].setMessage("");
+    std::cout << "msg sent: " << Users[userSocket].getBackMSG();
+    send(userSocket, Users[userSocket].getBackMSG().c_str(),
+         Users[userSocket].getBackMSG().size(), 0);
+    Users[userSocket].clearBackMSG();
 }
 
 void Server::execute() {
@@ -285,7 +292,7 @@ void Server::execute() {
                 else
                     handleConnection(i);
             }
-            if (FD_ISSET(i, &writeSockets) && !Users[i].getMessage().empty())
+            if (FD_ISSET(i, &writeSockets) && !Users[i].getBackMSG().empty())
                 sendConnection(i);
         }
     }

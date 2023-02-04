@@ -39,3 +39,15 @@ void    User::setNickname(std::string nickname_) {
 void    User::setUser(std::string user_) {
     this->user = user_;
 }
+
+void     User::setMode(std::string mode_) {
+    this->mode = mode_;
+}
+
+void     User::setUnused(std::string unused_) {
+    this->unused = unused_;
+}
+
+void     User::setRealname(std::string realname_) {
+    this->realname = realname_;
+}
