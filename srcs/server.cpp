@@ -70,6 +70,7 @@ Server::Server(int port_, std::string password_) {
     commands["PRIVMSG"] = 4;
     commands["PING"] = 5;
     commands["NOTICE"] = 6;
+    commands["QUIT"] = 7;
 }
 
 Server::~Server() {
@@ -101,28 +102,36 @@ void Server::acceptConnection() {
     Users[clientSocket].setSocket(clientSocket);
     Users[clientSocket].setHostname(host);
 
+    // TODO delete/change backMSG
     std::string welcomeMsg = "Welcome to the IRC Server!\n";
     send(clientSocket, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
 
     FD_SET(clientSocket, &master);
 }
 
-void    Server::quitConnection(std::string reason, int userSocket) {
-    std::cout << "Client quit: " << reason << std::endl;
-    std::string msg = ":" + Users[userSocket].getNickname(); // TODO + "!" + Users[userSocket].getUsername()
-    // + "@" + "Users[userSocket].getHostname()
-    Users.erase(userSocket);
+void    Server::QUIT(User &user, std::string content) {
+    std::cout << "User " << user.getNickname() << " left, reason: " << content << std::endl;
+    std::string msg;
+    if (content == "closed" || content == "crushed") {
+       msg = ":" + user.getNickname() + "!" + user.getRealname() + "@" + user.getHostname()
+                          + std::string(" QUIT ") + content + "\n";
+    } else
+        msg = ":" + user.getNickname() + "!" + user.getRealname() + "@" + user.getHostname()
+                          + std::string(" QUIT ") + content.substr(commandsParse[0].size() + 1, content.size()) + "\n";
+
+
+    Users.erase(user.getSocket());
+
     std::map<int, User>::iterator begin = Users.begin();
     std::map<int, User>::iterator end = Users.end();
-
     while (begin != end) {
-        begin->second.setMessage(msg);
+        begin->second.setBackMSG(msg);
         begin++;
     }
 
     // TODO quit channels
-    close(userSocket);
-    FD_CLR(userSocket, &master);
+    close(user.getSocket());
+    FD_CLR(user.getSocket(), &master);
 }
 
 void    Server::backMSG(User &user, int code, std::string cmd) {
@@ -191,7 +200,9 @@ void    Server::PRIVMSG(User &user, std::string content) {
     return ;
 }
 
-void    Server::NOTICE(User &, std::string) {
+void    Server::NOTICE(User &user, std::string content) {
+    (void)user;
+    (void)content;
     return ; //TODO implement this func
 }
 
@@ -242,6 +253,9 @@ void Server::parseCommands(std::string content) {
             case 6:
                 NOTICE(user, content_);
                 break ;
+            case 7:
+                QUIT(user, content_);
+                break ;
         }
     }
 }
@@ -253,9 +267,9 @@ void    Server::handleConnection(int userSocket) {
     int rd = recv(userSocket, buffer, 4096, 0);
 
     if (rd == -1)
-        quitConnection("crushed", userSocket);
+        QUIT(Users[userSocket], "crushed");
     if (rd == 0)
-        quitConnection("closed", userSocket);
+        QUIT(Users[userSocket], "closed");
     else {
         parseCommands(std::string(buffer).c_str());
         commandsParse.clear();

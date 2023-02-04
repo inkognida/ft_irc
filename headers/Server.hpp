@@ -60,7 +60,6 @@ public:
     void    acceptConnection();
     void    handleConnection(int userSocket);
     void    sendConnection(int userSocket);
-    void    quitConnection(std::string, int);
 
     //extra
     void    simpleErrorExit(std::string);
@@ -78,6 +77,7 @@ public:
     void                        PRIVMSG(User&, std::string);
     void                        PING(User&, std::string);
     void                        NOTICE(User&, std::string);
+    void                        QUIT(User&, std::string);
 
     //tools for execution
     int                         correctNICK(std::string);

@@ -80,6 +80,8 @@ void Bot::createSockets( void ) {
 	_APIsocket = new Socket(_API_IP, APIport);
 		
 	_IRCsocket->tryToConnect();
+    std::cout << "HERE" << std::endl;
+
 	_APIsocket->tryToConnect();
 	
 	fcntl(_IRCsocket->getFd(), F_SETFL, O_NONBLOCK);
