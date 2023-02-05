@@ -16,5 +16,6 @@
 # include <sstream>
 # include <iostream>
 # include "User.hpp"
+# include "Channel.hpp"
 # include "Server.hpp"
 # include <fcntl.h>

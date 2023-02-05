@@ -71,6 +71,7 @@ Server::Server(int port_, std::string password_) {
     commands["PING"] = 5;
     commands["NOTICE"] = 6;
     commands["QUIT"] = 7;
+    commands["JOIN"] = 8;
 }
 
 Server::~Server() {
@@ -174,40 +175,14 @@ void    Server::PING(User &user, std::string content) {
     user.setBackMSG(SERVER + std::string("PONG ") + content.substr(commandsParse[0].size() + 1, content.size()) + "\n");
 }
 
-void    Server::PRIVMSG(User &user, std::string content) {
-    if (commandsParse[1].empty()) {
-        backMSG(user, ERR_NORECIPIENT, user.getCmd());
-        return ;
-    }
-    if (commandsParse[2].empty()) {
-        backMSG(user, ERR_NOTEXTTOSEND, user.getCmd());
-        return ;
-    }
-
-    std::map<int, User>::iterator begin = Users.begin();
-    std::map<int, User>::iterator end = Users.end();
-
-    while (begin != end) {
-        if (begin->second.getNickname() == commandsParse[1]) {
-            begin->second.setBackMSG(content.substr(commandsParse[0].size() + commandsParse[1].size() + 2, content.size()) + "\n");
-            user.setBackMSG(content.substr(commandsParse[0].size() + commandsParse[1].size() + 2, content.size()) + "\n");
-            return ;
-        }
-        begin++;
-    }
-
-    backMSG(user, ERR_NORECIPIENT, user.getCmd());
-    return ;
-}
-
 void    Server::NOTICE(User &user, std::string content) {
     (void)user;
     (void)content;
     return ; //TODO implement this func
 }
 
-void Server::parseCommands(std::string content) {
-    User &user = Users.find(clientSocket)->second;
+void Server::parseCommands(std::string content, int userSocket) {
+    User &user = Users.find(userSocket)->second;
     content.erase( std::remove(content.begin(), content.end(), '\r'), content.end());
     content.erase( std::remove(content.begin(), content.end(), '\n'), content.end());
 
@@ -256,6 +231,9 @@ void Server::parseCommands(std::string content) {
             case 7:
                 QUIT(user, content_);
                 break ;
+            case 8:
+                JOIN(user);
+                break ;
         }
     }
 }
@@ -271,7 +249,7 @@ void    Server::handleConnection(int userSocket) {
     if (rd == 0)
         QUIT(Users[userSocket], "closed");
     else {
-        parseCommands(std::string(buffer).c_str());
+        parseCommands(std::string(buffer).c_str(), userSocket);
         commandsParse.clear();
         memset(buffer, 0, 4096);
     }

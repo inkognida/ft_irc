@@ -2,6 +2,8 @@
 #define SERVER_HPP
 
 class User;
+class Channel;
+
 
 # include "irc.hpp"
 
@@ -49,6 +51,9 @@ class User;
 //MODE
 #define ERR_UMODEUNKNOWNFLAG 501
 
+// CUSTOM defines
+#define RPL_CREATECHANNEL 502
+
 class Server {
 
 public:
@@ -68,7 +73,7 @@ public:
     int     getSocket(void) { return this->serverSocket; }
 
     // parse
-    void                        parseCommands(std::string);
+    void                        parseCommands(std::string,int);
 
     // execution
     void                        PASS(User&);
@@ -78,6 +83,7 @@ public:
     void                        PING(User&, std::string);
     void                        NOTICE(User&, std::string);
     void                        QUIT(User&, std::string);
+    void                        JOIN(User&);
 
     //tools for execution
     int                         correctNICK(std::string);
@@ -97,6 +103,8 @@ private:
     timeval                             timeout;
 
     std::map<int, User>                 Users;
+    std::map<std::string, Channel>      Channels;
+
 
     std::vector <std::string>           commandsParse;
     std::map <std::string, int>         commands;
