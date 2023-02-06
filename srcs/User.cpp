@@ -25,7 +25,7 @@ void    User::setPassword(std::string password_) {
 }
 
 void    User::setBackMSG(std::string backMsg_) {
-    this->backMsg = backMsg_;
+    this->backMsg = backMsg_ + "\n";
 }
 
 void    User::setCmd(std::string command_) {
@@ -50,4 +50,8 @@ void     User::setUnused(std::string unused_) {
 
 void     User::setRealname(std::string realname_) {
     this->realname = realname_;
+}
+
+void    User::setOper(bool oper_) {
+    this->oper = oper_;
 }

@@ -72,6 +72,7 @@ Server::Server(int port_, std::string password_) {
     commands["NOTICE"] = 6;
     commands["QUIT"] = 7;
     commands["JOIN"] = 8;
+    commands["TOPIC"] = 9;
 }
 
 Server::~Server() {
@@ -115,10 +116,12 @@ void    Server::QUIT(User &user, std::string content) {
     std::string msg;
     if (content == "closed" || content == "crushed") {
        msg = ":" + user.getNickname() + "!" + user.getRealname() + "@" + user.getHostname()
-                          + std::string(" QUIT ") + content + "\n";
-    } else
+                          + std::string(" QUIT ") + content;
+    } else {
+        content = content.substr(commandsParse[0].size() + 1, content.size());
         msg = ":" + user.getNickname() + "!" + user.getRealname() + "@" + user.getHostname()
-                          + std::string(" QUIT ") + content.substr(commandsParse[0].size() + 1, content.size()) + "\n";
+              + std::string(" QUIT ") + content;
+    }
 
 
     Users.erase(user.getSocket());
@@ -136,6 +139,7 @@ void    Server::QUIT(User &user, std::string content) {
 }
 
 void    Server::backMSG(User &user, int code, std::string cmd) {
+    std::string tmp = SERVER + std::to_string(code) + " " + cmd;
     switch (code) {
         case RPL_WELCOME:
             user.setBackMSG(std::string("Welcome to the ") + SERVER + std::to_string(code) +
@@ -143,27 +147,44 @@ void    Server::backMSG(User &user, int code, std::string cmd) {
             "!" +user.getUser() + "@" + user.getHostname()); // TODO data of creation server, code 004, 005, fix CODE
             return ;
         case ERR_NEEDMOREPARAMS:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " wrong parameters");
+            user.setBackMSG(tmp + " wrong parameters");
             return ;
         case ERR_ALREADYREGISTERED:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Unauthorized command (already registered)");
+            user.setBackMSG(tmp + " Unauthorized command (already registered)");
             return ;
         case ERR_PASSWDMISMATCH:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Password incorrect");
+            user.setBackMSG(tmp + " Password incorrect");
             return ;
         case ERR_NONICKNAMEGIVEN:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " no nickname given, use NICK [arg]");
+            user.setBackMSG(tmp + " no nickname given, use NICK [arg]");
             return ;
         case ERR_ERRONEUSNICKNAME:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Erroneous nickname");
+            user.setBackMSG(tmp + " Erroneous nickname");
             return ;
         case ERR_NICKNAMEINUSE:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " Nickname is already in use");
+            user.setBackMSG(tmp + " Nickname is already in use");
             return ;
         case ERR_NOTREGISTERED:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " You need to be registered (custom error)");
+            user.setBackMSG(tmp + " You need to be registered (custom error)");
+            return ;
         case ERR_NOORIGIN:
-            user.setBackMSG(SERVER + std::to_string(code) + " " + cmd + " No origin specified");
+            user.setBackMSG(tmp + " No origin specified");
+            return ;
+        case ERR_BADCHANMASK:
+            user.setBackMSG(tmp + " Bad channel mask");
+            return ;
+        case ERR_BADCHANNELKEY:
+            user.setBackMSG(tmp + " Cannot join channel (+k)");
+            return ;
+        case RPL_NOTOPIC:
+            user.setBackMSG(tmp + " No topic sent");
+            return ;
+        case ERR_CHANOPRIVSNEEDED:
+            user.setBackMSG(tmp + " You're not channel operator");
+            return ;
+        case ERR_NOTONCHANNEL:
+            user.setBackMSG(tmp + " You're not on that channel");
+            return ;
     }
 }
 
@@ -172,7 +193,8 @@ void    Server::PING(User &user, std::string content) {
         backMSG(user, ERR_NOORIGIN, user.getCmd());
         return ;
     }
-    user.setBackMSG(SERVER + std::string("PONG ") + content.substr(commandsParse[0].size() + 1, content.size()) + "\n");
+    content = content.substr(commandsParse[0].size() + 1, content.size());
+    user.setBackMSG(SERVER + std::string("PONG ") + content);
 }
 
 void    Server::NOTICE(User &user, std::string content) {
@@ -187,7 +209,7 @@ void Server::parseCommands(std::string content, int userSocket) {
     content.erase( std::remove(content.begin(), content.end(), '\n'), content.end());
 
     if (!content.empty()) {
-        std::string content_ = content; // PRIVMSG text argument
+        std::string args = content; // PRIVMSG text argument
         char *tmp = std::strtok(const_cast<char*>(content.c_str()), " ");
 
         while (tmp != nullptr) {
@@ -220,19 +242,22 @@ void Server::parseCommands(std::string content, int userSocket) {
                 USER(user);
                 break ;
             case 4:
-                PRIVMSG(user, content_);
+                PRIVMSG(user, args);
                 break ;
             case 5:
-                PING(user, content_);
+                PING(user, args);
                 break ;
             case 6:
-                NOTICE(user, content_);
+                NOTICE(user,args);
                 break ;
             case 7:
-                QUIT(user, content_);
+                QUIT(user, args);
                 break ;
             case 8:
                 JOIN(user);
+                break ;
+            case 9:
+                TOPIC(user, args);
                 break ;
         }
     }

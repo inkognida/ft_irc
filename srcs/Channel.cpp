@@ -5,12 +5,13 @@ Channel::Channel() {
 
 }
 
-Channel::Channel(std::string name_, User &user) {
-
+Channel::Channel(std::string name_) {
+    this->name = name_;
 }
 
-Channel::Channel(std::string name_, std::string pass_, User &user) {
-
+Channel::Channel(std::string name_, std::string pass_) {
+    this->name = name_;
+    this->pass = pass_;
 }
 
 Channel::~Channel() {
@@ -29,21 +30,19 @@ void                Channel::setTopic(std::string _topic) {
     this->topic = _topic;
 }
 
-void                Channel::setMode(std::string _mode) {
-    this->mode = _mode;
+void                Channel::addUser(User &user) {
+    this->users.insert(user.getSocket());
+    user.setOper(false);
 }
 
-void                Channel::addUser(int userSocket) {
-    this->users.push_back(userSocket);
+void                Channel::addOperator(User &user) {
+    this->operators.insert(user.getSocket());
+    user.setOper(true);
 }
 
-void                Channel::addOperator(int userSocket) {
-    this->operators.push_back(userSocket);
-}
-
-std::string         Channel::getUsers(std::map<int, User> clients) const {
-    std::vector<int>::iterator begin = users.begin();
-    std::vector<int>::iterator end = users.end();
+std::string         Channel::getUsersInfo(std::map<int, User> &clients) const {
+    std::set<int>::const_iterator begin = users.begin();
+    std::set<int>::const_iterator end = users.end();
 
     std::string chUsers;
 
@@ -53,11 +52,12 @@ std::string         Channel::getUsers(std::map<int, User> clients) const {
         begin++;
     }
 
+    return chUsers;
 }
 
-std::string         Channel::getOperators(std::map<int, User> clients) const {
-    std::vector<int>::iterator begin = users.begin();
-    std::vector<int>::iterator end = users.end();
+std::string         Channel::getOperatorsInfo(std::map<int, User> &clients) const {
+    std::set<int>::const_iterator begin = operators.begin();
+    std::set<int>::const_iterator end = operators.end();
 
     std::string chUsers;
 
@@ -67,4 +67,49 @@ std::string         Channel::getOperators(std::map<int, User> clients) const {
         chUsers += " ";
         begin++;
     }
+
+    return chUsers;
+}
+
+void         Channel::sendNotificationJoin(std::map<int, User> &clients) {
+    std::string usersInfo = getUsersInfo(clients);
+    std::string operatorsInfo = getOperatorsInfo(clients);
+
+    std::vector<int>    usersVector(users.begin(), users.end());
+    std::vector<int>    operatorsVector(operators.begin(), operators.end());
+
+    for (size_t i = 0; i < usersVector.size(); i++) {
+        clients[usersVector[i]].setBackMSG(SERVER + std::to_string(RPL_JOINCHANNEL) + " = " +
+            getName() + " " + usersInfo + " " + operatorsInfo);
+    }
+
+    for (size_t i = 0; i < operatorsVector.size(); i++) {
+        clients[operatorsVector[i]].setBackMSG(SERVER + std::to_string(RPL_JOINCHANNEL) + " = " +
+            getName() + " " + operatorsInfo + " " + usersInfo);
+    }
+}
+
+void        Channel::sendNotificationTopic(User &user) {
+    user.setBackMSG(SERVER + std::to_string(RPL_TOPIC) + user.getCmd() + " = " + getName() + " : " + getTopic());
+}
+
+bool        Channel::findMode(std::string mode) const {
+    if (modes.find(mode) != modes.end())
+        return true;
+    else
+        return false;
+}
+
+bool        Channel::findOper(User &oper) const {
+    if (operators.find(oper.getSocket()) != operators.end())
+        return true;
+    else
+        return false;
+}
+
+bool        Channel::findUser(User &user) const {
+    if (users.find(user.getSocket()) != users.end())
+        return true;
+    else
+        return false;
 }

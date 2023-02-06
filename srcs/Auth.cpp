@@ -50,7 +50,7 @@ void    Server::NICK(User &user) {
             return ;
         case 3:
             if (!user.getNickname().empty())
-                user.setBackMSG(user.getNickname() + " changed to " + commandsParse[1] + "\n");
+                user.setBackMSG(user.getNickname() + " changed to " + commandsParse[1]);
             else
                 user.clearBackMSG();
             user.setNickname(commandsParse[1]);

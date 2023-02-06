@@ -3,6 +3,10 @@
 
 static std::vector<std::string> splitChannelArgs(std::string &names) {
     std::vector<std::string> res;
+
+    if (names.empty())
+        return res;
+
     char *tmp = std::strtok(const_cast<char*>(names.c_str()), ",");
 
     while (tmp != nullptr) {
@@ -17,38 +21,53 @@ static bool correctName(std::string name) {
     if (name.size() > 50 || name[0] != '#')
         return false;
     for (size_t i = 1; i < name.size(); i++) {
-        if (!isalpha(name[i]) || !isdigit(name[i]) || name[i] == ',')
+        if (!isalpha(name[i]) && !isdigit(name[i]) && name[i] == ',')
             return false;
     }
     return true;
 }
 
+// TODO test it more -> maybe u should add some logic
 void    Server::JOIN(User &user) {
-    if (commandsParse.size() != 3) {
+    if (commandsParse.size() != 2 && commandsParse.size() != 3) {
         backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
         return ;
     }
 
+    std::vector<std::string> pswds;
+    if (commandsParse.size() == 3)
+        pswds = splitChannelArgs(commandsParse[2]);
     std::vector<std::string> names = splitChannelArgs(commandsParse[1]);
-    std::vector<std::string> pswds = splitChannelArgs(commandsParse[2]);
+
 
     for (size_t i = 0; i < names.size(); i++) {
+        if (!correctName(names[i]))
+            backMSG(user, ERR_BADCHANMASK, user.getCmd());
         // new channel
-        if (correctName(names[i]) && Channels.find(names[i]) == names.end()) {
+        else if (correctName(names[i]) && Channels.find(names[i]) == Channels.end()) {
             if (i < pswds.size()) {
                 Channels.insert(std::pair<std::string, Channel>(names[i], Channel(names[i], pswds[i])));
-                Channels[names[i]].addOperator(user.getSocket());
-                user.setBackMSG(SERVER + std::to_string(RPL_CREATECHANNEL) + " = " + Channels[names[i]].getName() +
-                    Channels[names[i]].getUsers(Users) + Channels[names[i]].getOperators(Users) + "\n");
+                Channels[names[i]].addOperator(user);
+                Channels[names[i]].sendNotificationJoin(Users);
             }
-            else
-                continue;
+            else {
+                Channels.insert(std::pair<std::string, Channel>(names[i], Channel(names[i])));
+                Channels[names[i]].addOperator(user);
+                Channels[names[i]].sendNotificationJoin(Users);
+            }
         }
         // channel exists
-        if (correctName(names[i]) && Channels.find(names[i]) != names.end()) {
-            continue ;
+        else if (correctName(names[i]) && Channels.find(names[i]) != Channels.end()) {
+            if (i < pswds.size() && Channels[names[i]].getPass() == pswds[i]) {
+                Channels[names[i]].addUser(user);
+                Channels[names[i]].sendNotificationJoin(Users);
+            } else if ((i < pswds.size() && Channels[names[i]].getPass() != pswds[i]) ||
+                    (pswds.size() == 0 && !Channels[names[i]].getPass().empty()))
+                backMSG(user, ERR_BADCHANNELKEY, user.getCmd());
+            else {
+                Channels[names[i]].addUser(user);
+                Channels[names[i]].sendNotificationJoin(Users);
+            }
         }
     }
-
-
 }

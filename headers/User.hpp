@@ -21,6 +21,7 @@ public:
     std::string getMessage() const { return this->message; };
     std::string getBackMSG() const { return this->backMsg; };
     std::string getCmd() const { return this->cmd; };
+    bool        getOper() const { return this->oper; };
 
     void                setSocket(int);
     void                setHostname(std::string);
@@ -34,6 +35,7 @@ public:
     void                setUnused(std::string);
     void                setRealname(std::string);
 
+    void                setOper(bool);
     void                setMessage(std::string);
     void                setBackMSG(std::string);
 
@@ -50,6 +52,7 @@ private:
     std::string                 unused;
     std::string                 realname;
 
+    bool                        oper;
     std::string                 message;
     std::string                 backMsg;
 

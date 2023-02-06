@@ -6,33 +6,40 @@
 class Channel {
 public:
     Channel();
-    Channel(std::string, User&);
-    Channel(std::string, std::string, User&);
+    Channel(std::string);
+    Channel(std::string, std::string);
     ~Channel();
 
     void                setName(std::string);
     void                setPass(std::string);
     void                setTopic(std::string);
-    void                setMode(std::string);
 
-    void                addUser(int);
-    void                addOperator(int);
+    void                addUser(User&);
+    void                addOperator(User&);
+    void                addMode(std::string);
 
-    std::string         getUsers(std::map<int, User>) const;
-    std::string         getOperators(std::map<int, User>) const;
+    std::string                 getUsersInfo(std::map<int, User>&) const;
+    std::string                 getOperatorsInfo(std::map<int, User>&) const;
+    void                        sendNotificationJoin(std::map<int, User>&);
+    void                        sendNotificationTopic(User&);
 
-    std::string         getName(void) const { return this->name; };
-    std::string         getPass(void) const { return this->pass; };
-    std::string         getTopic(void) const { return this->topic; };
-    std::string         getMode(void) const { return this->mode; };
+    std::string                 getName(void) const { return this->name; };
+    std::string                 getPass(void) const { return this->pass; };
+    std::string                 getTopic(void) const { return this->topic; };
+    std::set<std::string>       getModes(void) const { return this->modes; };
+
+    bool                        findMode(std::string) const;
+    bool                        findOper(User&) const;
+    bool                        findUser(User&) const;
+    void                        clearTopic(void) { this->topic.clear(); };
 private:
-    std::string         name;
-    std::string         pass;
-    std::string         topic;
-    std::string         mode;
+    std::string                         name;
+    std::string                         pass;
+    std::string                         topic;
+    std::set<std::string>               modes;
 
-    std::vector<int>    users;
-    std::vector<int>    operators;
+    std::set<int>                       users;
+    std::set<int>                       operators;
 };
 
 #endif

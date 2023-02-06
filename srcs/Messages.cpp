@@ -14,11 +14,11 @@ void    Server::PRIVMSG(User &user, std::string content) {
     std::map<int, User>::iterator begin = Users.begin();
     std::map<int, User>::iterator end = Users.end();
 
-
+    content = content.substr(commandsParse[1].size() + commandsParse[2].size() + 2, content.size());
     while (begin != end) {
         if (begin->second.getNickname() == commandsParse[1]) {
-            begin->second.setBackMSG(content.substr(commandsParse[0].size() + commandsParse[1].size() + 2, content.size()) + "\n");
-            user.setBackMSG(content.substr(commandsParse[0].size() + commandsParse[1].size() + 2, content.size()) + "\n");
+            begin->second.setBackMSG(content);
+            user.setBackMSG(content);
             return ;
         }
         begin++;

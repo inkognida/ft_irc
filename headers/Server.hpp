@@ -37,6 +37,7 @@ class Channel;
 #define ERR_NOTONCHANNEL 442
 // TOPIC
 #define RPL_TOPIC 332
+#define RPL_NOTOPIC 331
 #define RPL_TOPICWHOTIME 333
 // KICK
 #define ERR_USERNOTINCHANNEL 441
@@ -53,7 +54,7 @@ class Channel;
 
 // CUSTOM defines
 #define RPL_CREATECHANNEL 502
-
+#define RPL_JOINCHANNEL 503
 class Server {
 
 public:
@@ -84,6 +85,7 @@ public:
     void                        NOTICE(User&, std::string);
     void                        QUIT(User&, std::string);
     void                        JOIN(User&);
+    void                        TOPIC(User&, std::string);
 
     //tools for execution
     int                         correctNICK(std::string);
