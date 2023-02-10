@@ -51,10 +51,14 @@ class Channel;
 #define ERR_NOTEXTTOSEND 412
 //MODE
 #define ERR_UMODEUNKNOWNFLAG 501
+#define ERR_UNKNOWNMODE 472
 
 // CUSTOM defines
 #define RPL_CREATECHANNEL 502
 #define RPL_JOINCHANNEL 503
+#define RPL_VOICEPRIVILEGE 504
+#define RPL_CHANNELMODEIS 324
+#define RPL_USERKICKED 505
 class Server {
 
 public:
@@ -69,6 +73,7 @@ public:
 
     //extra
     void    simpleErrorExit(std::string);
+    int     userExists(std::string);
 
     // getters
     int     getSocket(void) { return this->serverSocket; }
@@ -86,10 +91,14 @@ public:
     void                        QUIT(User&, std::string);
     void                        JOIN(User&);
     void                        TOPIC(User&, std::string);
+    void                        MODE(User&);
+    void                        KICK(User&, std::string);
+    void                        INVITE(User&);
 
     //tools for execution
     int                         correctNICK(std::string);
     int                         correctUSER(std::string, int, User&);
+    void                        channelPRIVMSG(User &user, std::string content);
     void                        backMSG(User&, int, std::string);
 private:
     std::string                         password;
@@ -113,6 +122,8 @@ private:
 
     int                                 clientSocket;
     sockaddr_in                         clientAddress;
+
+    std::string                         response;
 };
 
 #endif

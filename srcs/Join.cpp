@@ -58,6 +58,17 @@ void    Server::JOIN(User &user) {
         }
         // channel exists
         else if (correctName(names[i]) && Channels.find(names[i]) != Channels.end()) {
+
+            //check this section
+            if (Channels[names[i]].findMode("+i") && user.checkMode("+i")) {
+                Channels[names[i]].addUser(user);
+                Channels[names[i]].sendNotificationJoin(Users);
+                user.deleteMode("+i");
+            } else if (Channels[names[i]].findMode("+i")) {
+                backMSG(user, ERR_INVITEONLYCHAN, user.getCmd());
+                continue ;
+            }
+
             if (i < pswds.size() && Channels[names[i]].getPass() == pswds[i]) {
                 Channels[names[i]].addUser(user);
                 Channels[names[i]].sendNotificationJoin(Users);

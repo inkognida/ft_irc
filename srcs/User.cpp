@@ -25,7 +25,7 @@ void    User::setPassword(std::string password_) {
 }
 
 void    User::setBackMSG(std::string backMsg_) {
-    this->backMsg = backMsg_ + "\n";
+    this->backMsg.push_back(backMsg_ + "\n");
 }
 
 void    User::setCmd(std::string command_) {
@@ -41,7 +41,7 @@ void    User::setUser(std::string user_) {
 }
 
 void     User::setMode(std::string mode_) {
-    this->mode = mode_;
+    this->mode.insert(mode_);
 }
 
 void     User::setUnused(std::string unused_) {

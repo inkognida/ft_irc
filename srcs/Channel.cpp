@@ -40,6 +40,10 @@ void                Channel::addOperator(User &user) {
     user.setOper(true);
 }
 
+void                Channel::addMode(std::string mode_) {
+    this->modes.insert(mode_);
+}
+
 std::string         Channel::getUsersInfo(std::map<int, User> &clients) const {
     std::set<int>::const_iterator begin = users.begin();
     std::set<int>::const_iterator end = users.end();
@@ -89,8 +93,22 @@ void         Channel::sendNotificationJoin(std::map<int, User> &clients) {
     }
 }
 
+void        Channel::sendNotificationPrivmsg(std::map<int, User> &clients, std::string msg, User &user) {
+    std::vector<int>        usersVector(users.begin(), users.end());
+    std::vector<int>        operatorsVector(operators.begin(), operators.end());
+
+    for (size_t i = 0; i < usersVector.size(); i++)
+        clients[usersVector[i]].setBackMSG(SERVER + user.getNickname() + " ! " + user.getRealname() + "@" +
+            user.getHostname() + " PRIVMSG to channel: " + getName() + " " + msg);
+
+    for (size_t i = 0; i < operatorsVector.size(); i++)
+        clients[operatorsVector[i]].setBackMSG(SERVER + user.getNickname() + " ! " + user.getRealname() + "@" +
+                                           user.getHostname() + " PRIVMSG to channel: " + getName() + " " + msg);
+}
+
+
 void        Channel::sendNotificationTopic(User &user) {
-    user.setBackMSG(SERVER + std::to_string(RPL_TOPIC) + user.getCmd() + " = " + getName() + " : " + getTopic());
+    user.setBackMSG(SERVER + std::to_string(RPL_TOPIC) + " " + user.getCmd() + " = " + getName() + " : " + getTopic());
 }
 
 bool        Channel::findMode(std::string mode) const {
@@ -112,4 +130,8 @@ bool        Channel::findUser(User &user) const {
         return true;
     else
         return false;
+}
+
+void        Channel::deleteUser(User &user) {
+    this->users.erase(user.getSocket());
 }

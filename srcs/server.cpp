@@ -73,6 +73,9 @@ Server::Server(int port_, std::string password_) {
     commands["QUIT"] = 7;
     commands["JOIN"] = 8;
     commands["TOPIC"] = 9;
+    commands["MODE"] = 10;
+    commands["KICK"] = 11;
+    commands["INVITE"] = 12;
 }
 
 Server::~Server() {
@@ -177,7 +180,7 @@ void    Server::backMSG(User &user, int code, std::string cmd) {
             user.setBackMSG(tmp + " Cannot join channel (+k)");
             return ;
         case RPL_NOTOPIC:
-            user.setBackMSG(tmp + " No topic sent");
+            user.setBackMSG(tmp + " No topic is set");
             return ;
         case ERR_CHANOPRIVSNEEDED:
             user.setBackMSG(tmp + " You're not channel operator");
@@ -185,6 +188,22 @@ void    Server::backMSG(User &user, int code, std::string cmd) {
         case ERR_NOTONCHANNEL:
             user.setBackMSG(tmp + " You're not on that channel");
             return ;
+        case ERR_NOSUCHNICK:
+            user.setBackMSG(tmp + " There was no such nickname in channel");
+            return ;
+        case ERR_UNKNOWNMODE:
+            user.setBackMSG(tmp + " is unknown mode char to me for");
+            return ;
+        case ERR_USERONCHANNEL:
+            user.setBackMSG(tmp + " is already on channel");
+            return ;
+        case ERR_NOSUCHCHANNEL:
+            user.setBackMSG(tmp + " No such channel");
+            return ;
+        case ERR_INVITEONLYCHAN:
+            user.setBackMSG(tmp + " Cannot join channel (+i)");
+            return ;
+
     }
 }
 
@@ -226,7 +245,7 @@ void Server::parseCommands(std::string content, int userSocket) {
         if (cmd > 666 && (user.getPassword().empty() || user.getNickname().empty() // TODO turn on the auth process (666) / add REGISTRATION flag for RPL_WELCOME
                         || user.getUser().empty())) {
             backMSG(user, ERR_NOTREGISTERED, user.getCmd());
-            std::cout << user.getBackMSG() << std::endl;
+            std::cout << user.getResponseMSG() << std::endl;
             user.clearBackMSG();
             return ;
         }
@@ -259,6 +278,15 @@ void Server::parseCommands(std::string content, int userSocket) {
             case 9:
                 TOPIC(user, args);
                 break ;
+            case 10:
+                MODE(user);
+                break ;
+            case 11:
+                KICK(user, args);
+                break ;
+            case 12:
+                INVITE(user);
+                break ;
         }
     }
 }
@@ -287,10 +315,11 @@ void    Server::simpleErrorExit(std::string error) {
 
 
 void    Server::sendConnection(int userSocket) {
-    std::cout << "msg sent: " << Users[userSocket].getBackMSG();
-    send(userSocket, Users[userSocket].getBackMSG().c_str(),
-         Users[userSocket].getBackMSG().size(), 0);
+    response = Users[userSocket].getResponseMSG();
+    std::cout << "msg sent: \n" << response;
+    send(userSocket, response.c_str(), response.size(), 0);
     Users[userSocket].clearBackMSG();
+    Users[userSocket].clearMsg();
 }
 
 void Server::execute() {
@@ -314,10 +343,8 @@ void Server::execute() {
         }
     }
 
-    for (size_t i = 0; i < Users.size(); i++) {
+    for (size_t i = 0; i < Users.size(); i++)
         close(Users[i].getSocket());
-    }
-
     close(serverSocket);
 
     FD_ZERO(&master);
