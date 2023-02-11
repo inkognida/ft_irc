@@ -3,8 +3,7 @@
 void    Server::PASS(User &user) {
     if (commandsParse.size() != 2)
         backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
-    else if (!user.getPassword().empty() && !user.getNickname().empty() &&
-             !user.getUser().empty()) {
+    else if (!user.getNewUser()) {
         backMSG(user, ERR_ALREADYREGISTERED, user.getCmd());
     }
     else if (commandsParse[1] != password)
@@ -13,26 +12,16 @@ void    Server::PASS(User &user) {
         user.setPassword(password);
 }
 
-int    Server::correctNICK(std::string nick) {
-    if (nick.size() > 20) {
-        return 1;
-    }
+static bool correctNickname(std::string nick) {
+    if (nick.size() > 20)
+        return false;
 
     for (size_t i = 0; i < nick.size(); i++) {
         if (!isalpha(nick[i]) && !isdigit(nick[i]) && nick[i] != '_')
-            return 1;
+            return false;
     }
 
-    std::map<int, User>::iterator begin = Users.begin();
-    std::map<int, User>::iterator end = Users.end();
-
-    while (begin != end) {
-        if (begin->second.getNickname() == nick)
-            return 2;
-        begin++;
-    }
-
-    return 3;
+    return true;
 }
 
 void    Server::NICK(User &user) {
@@ -41,21 +30,21 @@ void    Server::NICK(User &user) {
         return ;
     }
 
-    switch (correctNICK(commandsParse[1])) {
-        case 1:
-            backMSG(user, ERR_ERRONEUSNICKNAME, user.getCmd());
-            return ;
-        case 2:
-            backMSG(user, ERR_NICKNAMEINUSE, user.getCmd());
-            return ;
-        case 3:
-            if (!user.getNickname().empty())
-                user.setBackMSG(user.getNickname() + " changed to " + commandsParse[1]);
-            else
-                user.clearBackMSG();
-            user.setNickname(commandsParse[1]);
-            return ;
+    if (!correctNickname(commandsParse[1])) {
+        backMSG(user, ERR_ERRONEUSNICKNAME, user.getCmd());
+        return ;
     }
+
+    if (userExists(commandsParse[1]) >= 0) {
+        backMSG(user, ERR_NICKNAMEINUSE, user.getCmd());
+        return ;
+    }
+
+    if (!user.getNickname().empty())
+        user.setBackMSG(SERVER + std::string("user: ") + user.getNickname() + " changed nickname to " + commandsParse[1]);
+    else
+        user.clearBackMSG();
+    user.setNickname(commandsParse[1]);
 }
 
 int     Server::correctUSER(std::string user, int pos, User &user_) {
@@ -106,7 +95,7 @@ void    Server::USER(User &user) {
                 if (i == 1)
                     user.setUser(commandsParse[i]);
                 if (i == 2)
-                    user.setMode(commandsParse[i]);
+                    user.setUserMode(commandsParse[i]);
                 if (i == 3)
                     user.setUnused(commandsParse[i]);
                 if (i == 4)

@@ -8,6 +8,7 @@ class Channel;
 # include "irc.hpp"
 
 #define SERVER ":PUSSY "
+#define WELCOME_MESSAGE "Welcome to our PUSSY IRC server\n"
 #define RPL_WELCOME 001
 #define ERR_NOORIGIN 409
 // LIST
@@ -96,10 +97,13 @@ public:
     void                        INVITE(User&);
 
     //tools for execution
-    int                         correctNICK(std::string);
     int                         correctUSER(std::string, int, User&);
-    void                        channelPRIVMSG(User &user, std::string content);
+    void                        channelPRIVMSG(User&, std::string);
+    void                        channelNOTICE(User&, std::string);
     void                        backMSG(User&, int, std::string);
+
+    //bonus
+    void                        fileTransfer(User&);
 private:
     std::string                         password;
     int                                 port;
@@ -115,6 +119,7 @@ private:
 
     std::map<int, User>                 Users;
     std::map<std::string, Channel>      Channels;
+
 
 
     std::vector <std::string>           commandsParse;

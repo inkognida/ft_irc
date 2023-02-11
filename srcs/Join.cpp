@@ -49,11 +49,13 @@ void    Server::JOIN(User &user) {
                 Channels.insert(std::pair<std::string, Channel>(names[i], Channel(names[i], pswds[i])));
                 Channels[names[i]].addOperator(user);
                 Channels[names[i]].sendNotificationJoin(Users);
+                user.addChannel(names[i]);
             }
             else {
                 Channels.insert(std::pair<std::string, Channel>(names[i], Channel(names[i])));
                 Channels[names[i]].addOperator(user);
                 Channels[names[i]].sendNotificationJoin(Users);
+                user.addChannel(names[i]);
             }
         }
         // channel exists
@@ -64,6 +66,7 @@ void    Server::JOIN(User &user) {
                 Channels[names[i]].addUser(user);
                 Channels[names[i]].sendNotificationJoin(Users);
                 user.deleteMode("+i");
+                user.addChannel(names[i]);
             } else if (Channels[names[i]].findMode("+i")) {
                 backMSG(user, ERR_INVITEONLYCHAN, user.getCmd());
                 continue ;
@@ -72,12 +75,14 @@ void    Server::JOIN(User &user) {
             if (i < pswds.size() && Channels[names[i]].getPass() == pswds[i]) {
                 Channels[names[i]].addUser(user);
                 Channels[names[i]].sendNotificationJoin(Users);
+                user.addChannel(names[i]);
             } else if ((i < pswds.size() && Channels[names[i]].getPass() != pswds[i]) ||
                     (pswds.size() == 0 && !Channels[names[i]].getPass().empty()))
                 backMSG(user, ERR_BADCHANNELKEY, user.getCmd());
             else {
                 Channels[names[i]].addUser(user);
                 Channels[names[i]].sendNotificationJoin(Users);
+                user.addChannel(names[i]);
             }
         }
     }

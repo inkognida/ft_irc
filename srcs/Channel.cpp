@@ -93,17 +93,17 @@ void         Channel::sendNotificationJoin(std::map<int, User> &clients) {
     }
 }
 
-void        Channel::sendNotificationPrivmsg(std::map<int, User> &clients, std::string msg, User &user) {
+void        Channel::sendNotificationMsg(std::map<int, User> &clients, std::string msg, User &user) {
     std::vector<int>        usersVector(users.begin(), users.end());
     std::vector<int>        operatorsVector(operators.begin(), operators.end());
 
     for (size_t i = 0; i < usersVector.size(); i++)
-        clients[usersVector[i]].setBackMSG(SERVER + user.getNickname() + " ! " + user.getRealname() + "@" +
-            user.getHostname() + " PRIVMSG to channel: " + getName() + " " + msg);
+        clients[usersVector[i]].setBackMSG(SERVER + user.getNickname() + "!" + user.getRealname() + "@" +
+            user.getHostname() + " " + getName() + ": " + msg);
 
     for (size_t i = 0; i < operatorsVector.size(); i++)
-        clients[operatorsVector[i]].setBackMSG(SERVER + user.getNickname() + " ! " + user.getRealname() + "@" +
-                                           user.getHostname() + " PRIVMSG to channel: " + getName() + " " + msg);
+        clients[operatorsVector[i]].setBackMSG(SERVER + user.getNickname() + "!" + user.getRealname() + "@" +
+                                           user.getHostname() + " " + getName() + ": " + msg);
 }
 
 
@@ -134,4 +134,8 @@ bool        Channel::findUser(User &user) const {
 
 void        Channel::deleteUser(User &user) {
     this->users.erase(user.getSocket());
+}
+
+void        Channel::deleteOper(User &user) {
+    this->operators.erase(user.getSocket());
 }

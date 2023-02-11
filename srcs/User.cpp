@@ -16,8 +16,8 @@ void User::setHostname(std::string hostname_) {
     this->hostname = hostname_;
 }
 
-void User::setMessage(std::string message_) {
-    this->message = message_;
+void User::setResponse(std::string response_) {
+    this->response = response_;
 }
 
 void    User::setPassword(std::string password_) {
@@ -44,6 +44,10 @@ void     User::setMode(std::string mode_) {
     this->mode.insert(mode_);
 }
 
+void    User::setUserMode(std::string usermode_) {
+    this->usermode = usermode_;
+}
+
 void     User::setUnused(std::string unused_) {
     this->unused = unused_;
 }
@@ -54,4 +58,48 @@ void     User::setRealname(std::string realname_) {
 
 void    User::setOper(bool oper_) {
     this->oper = oper_;
+}
+
+void    User::quitChannels(std::map<std::string, Channel>& Channels) {
+    std::set<std::string>::const_iterator begin_ = channels.begin();
+    std::set<std::string>::const_iterator end_ = channels.end();
+
+    while (begin_ != end_) {
+        if (getOper())
+            Channels[*begin_].deleteOper(*this);
+        else
+            Channels[*begin_].deleteUser(*this);
+        begin_++;
+    }
+}
+
+void    User::quitServer(std::map<int, User>& Users, std::string reason) {
+    std::map<int, User>::iterator begin = Users.begin();
+    std::map<int, User>::iterator end = Users.end();
+
+    while (begin != end) {
+        begin->second.setBackMSG(getNickname() + "!" + getRealname() + "@" + getHostname() +
+                                 std::string(" QUIT ") + reason);
+        begin++;
+    }
+}
+
+std::string User::getResponseMSG() {
+    std::vector<std::string>::const_iterator begin = backMsg.begin();
+    std::vector<std::string>::const_iterator end = backMsg.end();
+
+    while (begin != end) {
+        response += *begin;
+        begin++;
+    }
+
+    return response;
+}
+
+bool        User::getRegistration() {
+    if (!getPassword().empty() && !getNickname().empty() && !getUser().empty() &&
+        !getUserMode().empty() && !getRealname().empty()) {
+        return true;
+    }
+    return false;
 }

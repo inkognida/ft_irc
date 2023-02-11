@@ -91,12 +91,13 @@ void            Server::MODE(User &user) {
 }
 
 void            Server::KICK(User &user, std::string content) {
-    content = content.substr(commandsParse[0].size() + commandsParse[1].size() + //TODO check this substr output with reason
-                commandsParse[2].size() + 3, content.size());
     if (commandsParse.size() < 3) {
         backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
         return ;
     }
+
+    content = content.substr(commandsParse[0].size() + commandsParse[1].size() + //TODO check this substr output with reason
+                             commandsParse[2].size() + 3, content.size());
 
     if (Channels.find(commandsParse[1]) == Channels.end()) {
         backMSG(user, ERR_NOSUCHCHANNEL, user.getCmd());
@@ -135,11 +136,10 @@ void            Server::INVITE(User &user) {
 
     int target = userExists(commandsParse[1]);
 
-    if (!target) {
+    if (target < 0) {
         backMSG(user, ERR_NOSUCHNICK, user.getCmd());
         return ;
     }
-
 
     if (Channels.find(commandsParse[2]) != Channels.end()) {
         if (!(Channels[commandsParse[1]].findUser(user) || Channels[commandsParse[1]].findOper(user)) &&

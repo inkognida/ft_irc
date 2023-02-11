@@ -106,49 +106,31 @@ void Server::acceptConnection() {
     Users[clientSocket];
     Users[clientSocket].setSocket(clientSocket);
     Users[clientSocket].setHostname(host);
+    Users[clientSocket].setNewUser(true);
 
-    // TODO delete/change backMSG
-    std::string welcomeMsg = "Welcome to the IRC Server!\n";
-    send(clientSocket, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
-
+    send(clientSocket, std::string(WELCOME_MESSAGE).c_str(), std::string(WELCOME_MESSAGE).size() + 1, 0);
     FD_SET(clientSocket, &master);
 }
 
 void    Server::QUIT(User &user, std::string content) {
-    std::cout << "User " << user.getNickname() << " left, reason: " << content << std::endl;
-    std::string msg;
-    if (content == "closed" || content == "crushed") {
-       msg = ":" + user.getNickname() + "!" + user.getRealname() + "@" + user.getHostname()
-                          + std::string(" QUIT ") + content;
-    } else {
-        content = content.substr(commandsParse[0].size() + 1, content.size());
-        msg = ":" + user.getNickname() + "!" + user.getRealname() + "@" + user.getHostname()
-              + std::string(" QUIT ") + content;
-    }
 
+    if (content == "closed" || content == "crushed")
+        user.quitServer(Users, content);
+    else
+        user.quitServer(Users, content.substr(commandsParse[0].size() + 1, content.size()));
 
+    user.quitChannels(Channels);
     Users.erase(user.getSocket());
 
-    std::map<int, User>::iterator begin = Users.begin();
-    std::map<int, User>::iterator end = Users.end();
-    while (begin != end) {
-        begin->second.setBackMSG(msg);
-        begin++;
-    }
-
-    // TODO quit channels
     close(user.getSocket());
     FD_CLR(user.getSocket(), &master);
+    FD_CLR(user.getSocket(), &readSockets);
+    FD_CLR(user.getSocket(), &writeSockets);
 }
 
 void    Server::backMSG(User &user, int code, std::string cmd) {
     std::string tmp = SERVER + std::to_string(code) + " " + cmd;
     switch (code) {
-        case RPL_WELCOME:
-            user.setBackMSG(std::string("Welcome to the ") + SERVER + std::to_string(code) +
-            std::string(" Network") + user.getNickname() +
-            "!" +user.getUser() + "@" + user.getHostname()); // TODO data of creation server, code 004, 005, fix CODE
-            return ;
         case ERR_NEEDMOREPARAMS:
             user.setBackMSG(tmp + " wrong parameters");
             return ;
@@ -189,7 +171,7 @@ void    Server::backMSG(User &user, int code, std::string cmd) {
             user.setBackMSG(tmp + " You're not on that channel");
             return ;
         case ERR_NOSUCHNICK:
-            user.setBackMSG(tmp + " There was no such nickname in channel");
+            user.setBackMSG(tmp + " There was no such nickname");
             return ;
         case ERR_UNKNOWNMODE:
             user.setBackMSG(tmp + " is unknown mode char to me for");
@@ -203,7 +185,15 @@ void    Server::backMSG(User &user, int code, std::string cmd) {
         case ERR_INVITEONLYCHAN:
             user.setBackMSG(tmp + " Cannot join channel (+i)");
             return ;
-
+        case ERR_CANNOTSENDTOCHAN:
+            user.setBackMSG(tmp + " Cannot send to channel");
+            return ;
+        case ERR_NORECIPIENT:
+            user.setBackMSG(tmp + " No recipient given (<command>)");
+            return ;
+        case ERR_NOTEXTTOSEND:
+            user.setBackMSG(tmp + " No text to send");
+            return ;
     }
 }
 
@@ -216,19 +206,13 @@ void    Server::PING(User &user, std::string content) {
     user.setBackMSG(SERVER + std::string("PONG ") + content);
 }
 
-void    Server::NOTICE(User &user, std::string content) {
-    (void)user;
-    (void)content;
-    return ; //TODO implement this func
-}
-
 void Server::parseCommands(std::string content, int userSocket) {
     User &user = Users.find(userSocket)->second;
     content.erase( std::remove(content.begin(), content.end(), '\r'), content.end());
     content.erase( std::remove(content.begin(), content.end(), '\n'), content.end());
 
     if (!content.empty()) {
-        std::string args = content; // PRIVMSG text argument
+        std::string args = content; // text argument
         char *tmp = std::strtok(const_cast<char*>(content.c_str()), " ");
 
         while (tmp != nullptr) {
@@ -237,58 +221,88 @@ void Server::parseCommands(std::string content, int userSocket) {
         }
 
         int cmd = commands[commandsParse[0]];
-        user.setCmd(commandsParse[0]);
 
         if (!cmd)
             return ;
 
-        if (cmd > 666 && (user.getPassword().empty() || user.getNickname().empty() // TODO turn on the auth process (666) / add REGISTRATION flag for RPL_WELCOME
-                        || user.getUser().empty())) {
+        user.setCmd(commandsParse[0]);
+
+        if (cmd > 3 && user.getNewUser()) { // TODO turn on auth process -> cmd > 3
             backMSG(user, ERR_NOTREGISTERED, user.getCmd());
-            std::cout << user.getResponseMSG() << std::endl;
-            user.clearBackMSG();
             return ;
         }
 
         switch (cmd) {
             case 1:
-                PASS(user);
+                PASS(user);// test passed
                 break   ;
             case 2:
-                NICK(user);
+                NICK(user);// TODO test
                 break ;
             case 3:
-                USER(user);
+                USER(user);// TODO test
                 break ;
             case 4:
-                PRIVMSG(user, args);
+                PRIVMSG(user, args);// TODO test
                 break ;
             case 5:
-                PING(user, args);
+                PING(user, args);// TODO test
                 break ;
             case 6:
-                NOTICE(user,args);
+                NOTICE(user,args);// TODO test
                 break ;
             case 7:
-                QUIT(user, args);
+                QUIT(user, args);// TODO test
                 break ;
             case 8:
-                JOIN(user);
+                JOIN(user);// TODO test
                 break ;
             case 9:
-                TOPIC(user, args);
+                TOPIC(user, args);// TODO test
                 break ;
             case 10:
-                MODE(user);
+                MODE(user);// TODO test
                 break ;
             case 11:
-                KICK(user, args);
+                KICK(user, args);// TODO test
                 break ;
             case 12:
-                INVITE(user);
+                INVITE(user);// TODO test
                 break ;
         }
+
+        if (user.getNewUser() && user.getRegistration()) {
+            fileTransfer(user);
+            user.setNewUser(false);
+            return ;
+        }
     }
+}
+
+
+void    Server::fileTransfer(User &user) {
+    std::ifstream file("test.txt", std::ifstream::binary);
+    if (!file.is_open())
+        simpleErrorExit("Failed to open file");
+
+    file.seekg(0, file.end);
+    int length = file.tellg();
+
+    if (length < 0)
+        simpleErrorExit("Failed to get length");
+    file.seekg(0, file.beg);
+
+    char * buffer = new char [length];
+
+    if (!file.read(buffer,length))  {
+        file.close();
+        simpleErrorExit("Failed to read");
+    }
+
+    send(user.getSocket(), buffer, length, 0); //not setBackMSG because of possible size
+
+    file.close();
+    delete[] buffer; // TODO check deallocated problem
 }
 
 void    Server::handleConnection(int userSocket) {
@@ -296,6 +310,12 @@ void    Server::handleConnection(int userSocket) {
 
     memset(buffer, 0, 4096);
     int rd = recv(userSocket, buffer, 4096, 0);
+
+    // TODO enable file sending from client if needed (use key word file)
+    /*
+    if (std::string(buffer, 4) == "file")
+        std::cout << std::string(buffer) << std::endl;
+    */
 
     if (rd == -1)
         QUIT(Users[userSocket], "crushed");
@@ -317,9 +337,10 @@ void    Server::simpleErrorExit(std::string error) {
 void    Server::sendConnection(int userSocket) {
     response = Users[userSocket].getResponseMSG();
     std::cout << "msg sent: \n" << response;
-    send(userSocket, response.c_str(), response.size(), 0);
+    if (send(userSocket, response.c_str(), response.size(), 0) < 0)
+        simpleErrorExit("Failed to send");
     Users[userSocket].clearBackMSG();
-    Users[userSocket].clearMsg();
+    Users[userSocket].clearResponse();
 }
 
 void Server::execute() {

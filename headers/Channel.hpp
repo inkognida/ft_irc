@@ -19,12 +19,13 @@ public:
     void                addMode(std::string);
 
     void                deleteUser(User&);
+    void                deleteOper(User&);
 
     std::string                 getUsersInfo(std::map<int, User>&) const;
     std::string                 getOperatorsInfo(std::map<int, User>&) const;
     void                        sendNotificationJoin(std::map<int, User>&);
     void                        sendNotificationTopic(User&);
-    void                        sendNotificationPrivmsg(std::map<int, User> &clients, std::string, User&);
+    void                        sendNotificationMsg(std::map<int, User> &clients, std::string, User&);
 
     std::string                 getName(void) const { return this->name; };
     std::string                 getPass(void) const { return this->pass; };
