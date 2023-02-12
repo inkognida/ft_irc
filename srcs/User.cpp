@@ -56,16 +56,12 @@ void     User::setRealname(std::string realname_) {
     this->realname = realname_;
 }
 
-void    User::setOper(bool oper_) {
-    this->oper = oper_;
-}
-
 void    User::quitChannels(std::map<std::string, Channel>& Channels) {
     std::set<std::string>::const_iterator begin_ = channels.begin();
     std::set<std::string>::const_iterator end_ = channels.end();
 
     while (begin_ != end_) {
-        if (getOper())
+        if (checkMode("+o"))
             Channels[*begin_].deleteOper(*this);
         else
             Channels[*begin_].deleteUser(*this);

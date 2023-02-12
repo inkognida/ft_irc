@@ -116,6 +116,8 @@ void    Server::QUIT(User &user, std::string content) {
 
     if (content == "closed" || content == "crushed")
         user.quitServer(Users, content);
+    else if (commandsParse.size() == 1)
+        user.quitServer(Users, std::string("no reason"));
     else
         user.quitServer(Users, content.substr(commandsParse[0].size() + 1, content.size()));
 
@@ -194,6 +196,12 @@ void    Server::backMSG(User &user, int code, std::string cmd) {
         case ERR_NOTEXTTOSEND:
             user.setBackMSG(tmp + " No text to send");
             return ;
+        case ERR_CHANNELISFULL:
+            user.setBackMSG(tmp + " Can't join the channel");
+            return ;
+        case ERR_USERNOTINCHANNEL:
+            user.setBackMSG(tmp + " They aren't on that channel") ;
+            return ;
     }
 }
 
@@ -227,7 +235,7 @@ void Server::parseCommands(std::string content, int userSocket) {
 
         user.setCmd(commandsParse[0]);
 
-        if (cmd > 3 && user.getNewUser()) { // TODO turn on auth process -> cmd > 3
+        if (cmd > 666 && user.getNewUser()) { // TODO turn on auth process -> cmd > 3
             backMSG(user, ERR_NOTREGISTERED, user.getCmd());
             return ;
         }
@@ -237,22 +245,22 @@ void Server::parseCommands(std::string content, int userSocket) {
                 PASS(user);// test passed
                 break   ;
             case 2:
-                NICK(user);// TODO test
+                NICK(user);// test passed (TODO need one more)
                 break ;
             case 3:
-                USER(user);// TODO test
+                USER(user, args);// test passed
                 break ;
             case 4:
                 PRIVMSG(user, args);// TODO test
                 break ;
             case 5:
-                PING(user, args);// TODO test
+                PING(user, args);// test passed
                 break ;
             case 6:
                 NOTICE(user,args);// TODO test
                 break ;
             case 7:
-                QUIT(user, args);// TODO test
+                QUIT(user, args);// test passed (TODO need one more)
                 break ;
             case 8:
                 JOIN(user);// TODO test
@@ -364,8 +372,13 @@ void Server::execute() {
         }
     }
 
-    for (size_t i = 0; i < Users.size(); i++)
-        close(Users[i].getSocket());
+    std::map<int, User>::const_iterator begin = Users.begin();
+    std::map<int, User>::const_iterator end = Users.end();
+
+    while (begin != end) {
+        close(begin->second.getSocket());
+        begin++;
+    }
     close(serverSocket);
 
     FD_ZERO(&master);

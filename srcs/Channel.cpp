@@ -32,12 +32,11 @@ void                Channel::setTopic(std::string _topic) {
 
 void                Channel::addUser(User &user) {
     this->users.insert(user.getSocket());
-    user.setOper(false);
 }
 
 void                Channel::addOperator(User &user) {
     this->operators.insert(user.getSocket());
-    user.setOper(true);
+    user.setMode("+o");
 }
 
 void                Channel::addMode(std::string mode_) {

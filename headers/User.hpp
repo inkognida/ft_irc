@@ -26,7 +26,6 @@ public:
 
 
     std::string                     getCmd() const { return this->cmd; };
-    bool                            getOper() const { return this->oper; };
     bool                            checkMode(std::string mode_) const {
         if (mode.find(mode_) != mode.end())
             return true;
@@ -47,7 +46,6 @@ public:
     void                    setRealname(std::string);
 
     void                    setMode(std::string);
-    void                    setOper(bool);
     void                    setResponse(std::string);
     void                    setBackMSG(std::string);
 
@@ -61,6 +59,20 @@ public:
 
     void                    quitServer(std::map<int, User>&, std::string);
     void                    quitChannels(std::map<std::string, Channel>&);
+
+    bool                    inviteExists(std::string channel) {
+        if (invites.find(channel) != invites.end())
+            return true;
+        return false;
+    }
+    void                    addInvite(std::string channel) {
+        invites.insert(channel);
+    }
+
+    void                    deleteInvite(std::string channel) {
+        invites.erase(channel);
+    }
+
 private:
     int                                         socket;
     std::string                                 hostname;
@@ -76,7 +88,7 @@ private:
 
     std::set<std::string>                       mode;
     std::set<std::string>                       channels;
-    bool                                        oper;
+    std::set<std::string>                       invites;
 
     std::string                                 response;
     std::vector<std::string>                    backMsg;

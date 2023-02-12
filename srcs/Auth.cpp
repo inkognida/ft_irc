@@ -42,64 +42,78 @@ void    Server::NICK(User &user) {
 
     if (!user.getNickname().empty())
         user.setBackMSG(SERVER + std::string("user: ") + user.getNickname() + " changed nickname to " + commandsParse[1]);
-    else
-        user.clearBackMSG();
+
     user.setNickname(commandsParse[1]);
 }
 
-int     Server::correctUSER(std::string user, int pos, User &user_) {
-    if (pos == 1 || pos == 4) {
-        for (size_t i = 0; i < user.size(); i++) {
-            if (!isalpha(user[i]) && user[i] != '_')
-                return 1;
+static bool correctUserInfo(std::string arg, int pos) {
+    if (arg.size() > 20 && pos != 4)
+        return false;
+
+    if (pos == 1 || pos == 3) {
+        for (size_t i = 0; i < arg.size(); i++) {
+            if (!isalpha(arg[i]) && arg[i] != '_')
+                return false;
         }
     }
 
-    if (pos == 2 || pos == 3) {
-        for (size_t i = 0; i < user.size(); i++) {
-            if (!isalpha(user[i]) && !isdigit(user[i]))
-                return 1;
+    if (pos == 2) {
+        for (size_t i = 0; i < arg.size(); i++) {
+            if (!isalpha(arg[i]) && !isdigit(arg[i]))
+                return false;
         }
     }
 
-    if (pos == 1) {
-        std::map<int, User>::iterator begin = Users.begin();
-        std::map<int, User>::iterator end = Users.end();
-
-        while (begin != end) {
-            if (begin->second.getUser() == user && begin->second.getNickname() != user_.getNickname())
-                return 2;
-            begin++;
+    if (pos == 4) {
+        for (size_t i = 0; i < arg.size(); i++) {
+            if (arg[i] == '#')
+                return false;
         }
     }
 
-    return 3;
+    return true;
 }
 
-void    Server::USER(User &user) {
-    if (commandsParse.size() != 5) {
+int Server::userInfoExists(std::string usermode) {
+    std::map<int, User>::const_iterator begin = Users.begin();
+    std::map<int, User>::const_iterator end = Users.end();
+
+    while (begin != end) {
+        if (begin->second.getUser() == usermode)
+            return begin->second.getSocket();
+        begin++;
+    }
+
+    return -1;
+}
+
+void    Server::USER(User &user, std::string content) {
+    if (commandsParse.size() < 5) {
         backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
         return ;
     }
 
-    for (size_t i = 1; i < commandsParse.size(); i++) {
-        switch (correctUSER(commandsParse[i], i, user)) {
-            case 1:
-                backMSG(user, ERR_ALREADYREGISTERED, user.getCmd());
-                return ;
-            case 2:
-                backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
-                return ;
-            case 3:
-                user.clearBackMSG();
-                if (i == 1)
-                    user.setUser(commandsParse[i]);
-                if (i == 2)
-                    user.setUserMode(commandsParse[i]);
-                if (i == 3)
-                    user.setUnused(commandsParse[i]);
-                if (i == 4)
-                    user.setRealname(commandsParse[i]);
-        }
+    if (!user.getNewUser()) {
+        backMSG(user, ERR_ALREADYREGISTERED, user.getCmd());
+        return ;
     }
+
+    content = content.substr(commandsParse[0].size() + commandsParse[1].size() + commandsParse[2].size()
+            + commandsParse[3].size() + 4, content.size());
+
+    if (!correctUserInfo(commandsParse[1], 1) || !correctUserInfo(commandsParse[2], 2) ||
+        !correctUserInfo(commandsParse[3], 3) || !correctUserInfo(content, 4)) {
+        backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
+        return ;
+    }
+
+    if (userInfoExists(commandsParse[1]) >= 0) {
+        backMSG(user, ERR_ALREADYREGISTERED, user.getCmd());
+        return ;
+    }
+
+    user.setUser(commandsParse[1]);
+    user.setUserMode(commandsParse[2]);
+    user.setUnused(commandsParse[3]);
+    user.setRealname(content);
 }

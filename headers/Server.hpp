@@ -75,6 +75,7 @@ public:
     //extra
     void    simpleErrorExit(std::string);
     int     userExists(std::string);
+    int     userInfoExists(std::string);
 
     // getters
     int     getSocket(void) { return this->serverSocket; }
@@ -85,7 +86,7 @@ public:
     // execution
     void                        PASS(User&);
     void                        NICK(User&);
-    void                        USER(User&);
+    void                        USER(User&, std::string);
     void                        PRIVMSG(User&, std::string);
     void                        PING(User&, std::string);
     void                        NOTICE(User&, std::string);
@@ -100,6 +101,7 @@ public:
     int                         correctUSER(std::string, int, User&);
     void                        channelPRIVMSG(User&, std::string);
     void                        channelNOTICE(User&, std::string);
+    void                        channelJOIN(User&, std::string, bool, std::string);
     void                        backMSG(User&, int, std::string);
 
     //bonus
