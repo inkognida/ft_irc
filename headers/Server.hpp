@@ -9,29 +9,26 @@ class Channel;
 
 #define SERVER ":PUSSY "
 #define WELCOME_MESSAGE "Welcome to our PUSSY IRC server\n"
-#define RPL_WELCOME 001
+
+
 #define ERR_NOORIGIN 409
 // LIST
 #define RPL_LIST 322
-#define RPL_LISTEND 323
 #define RPL_INVITING 341
 // NICKNAME
 #define ERR_NONICKNAMEGIVEN 431
 #define ERR_ERRONEUSNICKNAME 432
 #define ERR_NICKNAMEINUSE 433
-#define ERR_NICKCOLLISION 436
 // USERNAME
 #define ERR_NEEDMOREPARAMS 461
 #define ERR_ALREADYREGISTERED 462
 // OPER
 #define ERR_PASSWDMISMATCH 464
-#define ERR_NOOPERHOST 491
 // JOIN
 #define ERR_NOSUCHCHANNEL 403
 #define ERR_CANNOTSENDTOCHAN 404
 #define ERR_CHANNELISFULL 471
 #define ERR_INVITEONLYCHAN 473
-#define ERR_BANNEDFROMCHAN 474
 #define ERR_BADCHANNELKEY 475
 #define ERR_USERONCHANNEL 443
 // PART
@@ -39,7 +36,6 @@ class Channel;
 // TOPIC
 #define RPL_TOPIC 332
 #define RPL_NOTOPIC 331
-#define RPL_TOPICWHOTIME 333
 // KICK
 #define ERR_USERNOTINCHANNEL 441
 #define ERR_BADCHANMASK 476
@@ -51,15 +47,16 @@ class Channel;
 #define ERR_NORECIPIENT 411
 #define ERR_NOTEXTTOSEND 412
 //MODE
-#define ERR_UMODEUNKNOWNFLAG 501
 #define ERR_UNKNOWNMODE 472
-
+#define RPL_NAMREPLY 353
 // CUSTOM defines
 #define RPL_CREATECHANNEL 502
 #define RPL_JOINCHANNEL 503
 #define RPL_VOICEPRIVILEGE 504
 #define RPL_CHANNELMODEIS 324
 #define RPL_USERKICKED 505
+#define RPL_LEFTALLCHANNELS 506
+
 class Server {
 
 public:
@@ -80,6 +77,13 @@ public:
     // getters
     int     getSocket(void) { return this->serverSocket; }
 
+    // output with cmd
+    void                        outUsersCmd(User&, std::string);
+    void                        outChannelsCmd(User&, std::string);
+
+    // output channels info with cmd
+    void                        outChannelsInfoCmd(User&, std::string);
+
     // parse
     void                        parseCommands(std::string,int);
 
@@ -96,12 +100,15 @@ public:
     void                        MODE(User&);
     void                        KICK(User&, std::string);
     void                        INVITE(User&);
+    void                        LIST(User&);
+    void                        NAMES(User&);
 
     //tools for execution
-    int                         correctUSER(std::string, int, User&);
     void                        channelPRIVMSG(User&, std::string);
     void                        channelNOTICE(User&, std::string);
     void                        channelJOIN(User&, std::string, bool, std::string);
+    void                        userMODE(User&, std::string);
+
     void                        backMSG(User&, int, std::string);
 
     //bonus

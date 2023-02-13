@@ -26,6 +26,78 @@ static bool correctName(std::string name) {
     return true;
 }
 
+void                       Server::outUsersCmd(User &user, std::string cmd)  {
+    std::map<int, User>::const_iterator begin = Users.begin();
+    std::map<int, User>::const_iterator end = Users.end();
+
+    while (begin != end) {
+        if (cmd == "NAMES")
+            user.setBackMSG(SERVER + std::to_string(RPL_NAMREPLY) + " " + begin->second.getNickname());
+        begin++;
+    }
+}
+
+void                       Server::outChannelsCmd(User &user, std::string cmd)  {
+    std::map<std::string, Channel>::const_iterator begin = Channels.begin();
+    std::map<std::string, Channel>::const_iterator end = Channels.end();
+
+    while (begin != end) {
+        if (cmd == "LIST")
+            user.setBackMSG(SERVER + std::to_string(RPL_LIST) + " " + begin->first + " topic: " +
+                            begin->second.getTopic());
+        else if (cmd == "NAMES")
+            user.setBackMSG(SERVER + std::to_string(RPL_NAMREPLY) + " " + begin->first);
+        begin++;
+    }
+}
+
+void                        Server::outChannelsInfoCmd(User &user, std::string cmd)  {
+    std::vector<std::string> names = splitChannelArgs(commandsParse[1]);
+
+    for (size_t i = 0; i < names.size(); i++) {
+        if (!correctName(names[i]))
+            backMSG(user, ERR_BADCHANMASK, user.getCmd());
+        else if (Channels.find(names[i]) == Channels.end())
+            backMSG(user, ERR_NOSUCHCHANNEL, user.getCmd());
+        else if (cmd == "LIST")
+            user.setBackMSG(SERVER + std::to_string(RPL_LIST) + " " + names[i] + " topic: " +
+                            Channels[names[i]].getTopic());
+        else if (cmd == "NAMES")
+            user.setBackMSG(SERVER + std::to_string(RPL_LIST) + " " + names[i] + " users: " +
+                            Channels[names[i]].getUsersInfo(Users) + Channels[names[i]].getOperatorsInfo(Users));
+    }
+}
+
+void    Server::LIST(User &user) {
+    if (commandsParse.size() < 1 || commandsParse.size() > 2) {
+        backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
+        return ;
+    }
+
+    if (commandsParse.size() == 1) {
+        outChannelsCmd(user, "LIST");
+        return ;
+    }
+
+    outChannelsInfoCmd(user, "LIST");
+}
+
+
+void    Server::NAMES(User &user) {
+    if (commandsParse.size() < 1 || commandsParse.size() > 2) {
+        backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
+        return ;
+    }
+
+    if (commandsParse.size() == 1) {
+        outChannelsCmd(user, "NAMES");
+        outUsersCmd(user, "NAMES");
+        return ;
+    }
+
+    outChannelsInfoCmd(user, "NAMES");
+}
+
 void    Server::channelJOIN(User &user, std::string name, bool create, std::string passwd = "") {
     // new channel creation
     if (create && passwd.empty()) {
@@ -33,20 +105,21 @@ void    Server::channelJOIN(User &user, std::string name, bool create, std::stri
         Channels[name].addOperator(user);
         Channels[name].sendNotificationJoin(Users);
         user.addChannel(name);
+        user.addChannelMode(name, "+o");
     } else if (create) {
         Channels.insert(std::pair<std::string, Channel>(name, Channel(name, passwd)));
         Channels[name].addOperator(user);
         Channels[name].sendNotificationJoin(Users);
         user.addChannel(name);
+        user.addChannelMode(name, "+o");
     }
 
     // channel exists
     if (!create && (Channels[name].findOper(user) || Channels[name].findUser(user)))
         backMSG(user, ERR_CHANNELISFULL, user.getCmd());
-    else if (Channels[name].findMode("+i") && user.inviteExists(name)) {
+    else if (Channels[name].findMode("+i") && user.checkChannelMode(name, "+i")) {
         Channels[name].addUser(user);
         Channels[name].sendNotificationJoin(Users);
-        user.deleteInvite(name);
         user.addChannel(name);
     }
     else if (Channels[name].findMode("+i"))
@@ -69,13 +142,19 @@ void    Server::channelJOIN(User &user, std::string name, bool create, std::stri
             user.addChannel(name);
         }
     }
-
 }
 
-// TODO test it more -> maybe u should add some logic
 void    Server::JOIN(User &user) {
     if (commandsParse.size() != 2 && commandsParse.size() != 3) {
         backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
+        return ;
+    }
+
+    // leave all joined channels
+    if (commandsParse.size() == 2 && commandsParse[1] == "0") {
+        user.setBackMSG(SERVER + std::to_string(RPL_LEFTALLCHANNELS) + " You left all joined channels");
+        user.showLeftChannels();
+        user.quitChannels(Channels);
         return ;
     }
 
@@ -118,58 +197,3 @@ void    Server::JOIN(User &user) {
         }
     }
 }
-
-// before
-/*
- *     if (commandsParse.size() == 3)
-        pswds = splitChannelArgs(commandsParse[2]);
-
-
-    for (size_t i = 0; i < names.size(); i++) {
-        if (!correctName(names[i]))
-            backMSG(user, ERR_BADCHANMASK, user.getCmd());
-        // new channel
-        else if (Channels.find(names[i]) == Channels.end()) {
-            if (i < pswds.size()) {
-                Channels.insert(std::pair<std::string, Channel>(names[i], Channel(names[i], pswds[i])));
-                Channels[names[i]].addOperator(user);
-                Channels[names[i]].sendNotificationJoin(Users);
-                user.addChannel(names[i]);
-            }
-            else {
-                Channels.insert(std::pair<std::string, Channel>(names[i], Channel(names[i])));
-                Channels[names[i]].addOperator(user);
-                Channels[names[i]].sendNotificationJoin(Users);
-                user.addChannel(names[i]);
-            }
-        }
-        // channel exists
-        else if (Channels[names[i]].findOper(user) || Channels[names[i]].findUser(user))
-            backMSG(user, ERR_CHANNELISFULL, user.getCmd());
-        else {
-            //check this section
-            if (Channels[names[i]].findMode("+i") && user.checkMode("+i")) {
-                Channels[names[i]].addUser(user);
-                Channels[names[i]].sendNotificationJoin(Users);
-                user.deleteMode("+i");
-                user.addChannel(names[i]);
-            } else if (Channels[names[i]].findMode("+i")) {
-                backMSG(user, ERR_INVITEONLYCHAN, user.getCmd());
-                continue ;
-            }
-
-            if (i < pswds.size() && Channels[names[i]].getPass() == pswds[i]) {
-                Channels[names[i]].addUser(user);
-                Channels[names[i]].sendNotificationJoin(Users);
-                user.addChannel(names[i]);
-            } else if ((i < pswds.size() && Channels[names[i]].getPass() != pswds[i]) ||
-                    (pswds.size() == 0 && !Channels[names[i]].getPass().empty()))
-                backMSG(user, ERR_BADCHANNELKEY, user.getCmd());
-            else {
-                Channels[names[i]].addUser(user);
-                Channels[names[i]].sendNotificationJoin(Users);
-                user.addChannel(names[i]);
-            }
-        }
-    }
- */

@@ -19,9 +19,12 @@ void        Server::TOPIC(User &user, std::string content) {
         return ;
     }
 
-    if (commandsParse.size() == 3 && commandsParse[2][0] == ':') {
-        Channels[commandsParse[1]].clearTopic();
-        backMSG(user, RPL_NOTOPIC, user.getCmd());
+    if (commandsParse[2][0] == ':' && commandsParse[2].size() == 1) {
+        if (Channels[commandsParse[1]].findOper(user)) {
+            Channels[commandsParse[1]].clearTopic();
+            backMSG(user, RPL_NOTOPIC, user.getCmd());
+        } else
+            backMSG(user, ERR_CHANOPRIVSNEEDED, user.getCmd());
         return ;
     }
 
@@ -31,7 +34,7 @@ void        Server::TOPIC(User &user, std::string content) {
             Channels[commandsParse[1]].setTopic(content);
             Channels[commandsParse[1]].sendNotificationTopic(user);
         }
-        else if (Channels[commandsParse[1]].findMode("+t") && !Channels[commandsParse[1]].findOper(user))
+        else if (Channels[commandsParse[1]].findMode("+t"))
             backMSG(user, ERR_CHANOPRIVSNEEDED, user.getCmd());
         else {
             Channels[commandsParse[1]].setTopic(content);
@@ -40,6 +43,46 @@ void        Server::TOPIC(User &user, std::string content) {
         return ;
     } else
         backMSG(user, ERR_NOTONCHANNEL, user.getCmd());
+}
+
+void            Server::userMODE(User &user, std::string mode) {
+    if (commandsParse[3].empty()) {
+        backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
+        return ;
+    }
+
+    int target = userExists(commandsParse[3]);
+
+    if (target < 0) {
+        backMSG(user, ERR_NOSUCHNICK, user.getCmd());
+        return ;
+    }
+
+    if (!Channels[commandsParse[1]].findUser(Users[target])) {
+        backMSG(user, ERR_USERNOTINCHANNEL, user.getCmd());
+        return ;
+    }
+
+    if (!Channels[commandsParse[1]].findOper(user)) {
+        backMSG(user, ERR_CHANOPRIVSNEEDED, user.getCmd());
+        return ;
+    }
+
+    if (mode == "+v") {
+        Users[target].addChannelMode(commandsParse[1], "+v");
+        Users[target].setBackMSG(SERVER + std::to_string(RPL_VOICEPRIVILEGE) + " = " +
+                                 commandsParse[1] + " : Now you have voice privilege");
+        user.setBackMSG(SERVER + std::to_string(RPL_VOICEPRIVILEGE) + " = " +
+                        commandsParse[1] + " : You gave voice privilege to " + Users[target].getNickname());
+        return ;
+    } else if (mode == "-v") {
+        Users[target].deleteChannelMode(commandsParse[1], "+v");
+        Users[target].setBackMSG(SERVER + std::to_string(RPL_VOICEPRIVILEGE) + " = " +
+                                 commandsParse[1] + " : Now you don't have voice privilege");
+        user.setBackMSG(SERVER + std::to_string(RPL_VOICEPRIVILEGE) + " = " +
+                        commandsParse[1] + " : You take voice privilege from " + Users[target].getNickname());
+        return ;
+    }
 }
 
 void            Server::MODE(User &user) {
@@ -53,34 +96,36 @@ void            Server::MODE(User &user) {
         return ;
     }
 
+    if (!Channels[commandsParse[1]].findOper(user)) {
+        backMSG(user, ERR_CHANOPRIVSNEEDED, user.getCmd());
+        return ;
+    }
+
     if (commandsParse[2] == "+t")
         Channels[commandsParse[1]].addMode("+t");
+    else if (commandsParse[2] == "-t")
+        Channels[commandsParse[1]].deleteMode("+t");
+
     else if (commandsParse[2] == "+n")
         Channels[commandsParse[1]].addMode("+n");
+    else if (commandsParse[2] == "-n")
+        Channels[commandsParse[1]].deleteMode("+n");
+
     else if (commandsParse[2] == "+m")
         Channels[commandsParse[1]].addMode("+m");
-    else if (commandsParse[2] == "+v") {
-        if (commandsParse[3].empty()) {
-            backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
-            return ;
-        }
+    else if (commandsParse[2] == "-m")
+        Channels[commandsParse[1]].deleteMode("+m");
 
-        for (size_t i = 0; i < Users.size(); i++) {
-            if (Users[i].getNickname() == commandsParse[3] && Channels[commandsParse[1]].findUser(Users[i])
-                && Channels[commandsParse[1]].findOper(user)) {
-                Channels[commandsParse[1]].addMode("+v");
-                Users[i].setMode("+v");
-                Users[i].setBackMSG(SERVER + std::to_string(RPL_VOICEPRIVILEGE) + " = " +
-                    Channels[commandsParse[1]].getName() + " : Now you have voice privilege");
-                user.setBackMSG(SERVER + std::to_string(RPL_VOICEPRIVILEGE) + " = " +
-                    Channels[commandsParse[1]].getName() + " : You gave voice privilege to " + Users[i].getNickname());
-                return ;
-            }
-        }
-        backMSG(user, ERR_NOSUCHNICK, user.getCmd());
-        return ;
-    } else if (commandsParse[2] == "+i")
+    else if (commandsParse[2] == "+i")
         Channels[commandsParse[1]].addMode("+i");
+    else if (commandsParse[2] == "-i")
+        Channels[commandsParse[1]].deleteMode("+i");
+
+    // user modes
+    else if (commandsParse[2] == "+v" || commandsParse[2] == "-v") {
+        userMODE(user, commandsParse[2]);
+        return ;
+    }
     else {
         backMSG(user, ERR_UNKNOWNMODE, user.getCmd());
         return ;
@@ -125,7 +170,6 @@ void            Server::KICK(User &user, std::string content) {
 
         Channels[commandsParse[1]].deleteUser(Users[target]);
     }
-
 }
 
 int            Server::userExists(std::string targetNick) {
@@ -166,7 +210,7 @@ void            Server::INVITE(User &user) {
 
     if (Channels[commandsParse[2]].findMode("+i")) {
         if (Channels[commandsParse[2]].findOper(user)) {
-            Users[target].addInvite(commandsParse[2]);
+            Users[target].addChannelMode(commandsParse[2], "+i");
             Users[target].setBackMSG(SERVER + std::to_string(RPL_INVITING) + " You was invited to channel " +
                 commandsParse[2] + " by " + user.getNickname());
             user.setBackMSG(SERVER + std::to_string(RPL_INVITING) + " You invited to " +

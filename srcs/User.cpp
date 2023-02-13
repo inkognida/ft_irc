@@ -40,10 +40,6 @@ void    User::setUser(std::string user_) {
     this->user = user_;
 }
 
-void     User::setMode(std::string mode_) {
-    this->mode.insert(mode_);
-}
-
 void    User::setUserMode(std::string usermode_) {
     this->usermode = usermode_;
 }
@@ -57,15 +53,15 @@ void     User::setRealname(std::string realname_) {
 }
 
 void    User::quitChannels(std::map<std::string, Channel>& Channels) {
-    std::set<std::string>::const_iterator begin_ = channels.begin();
-    std::set<std::string>::const_iterator end_ = channels.end();
+    std::map<channel, modes>::const_iterator begin = channels.begin();
+    std::map<channel, modes>::const_iterator end = channels.end();
 
-    while (begin_ != end_) {
-        if (checkMode("+o"))
-            Channels[*begin_].deleteOper(*this);
+    while (begin != end) {
+        if (checkChannelMode(begin->first, "+o"))
+            Channels[begin->first].deleteOper(*this);
         else
-            Channels[*begin_].deleteUser(*this);
-        begin_++;
+            Channels[begin->first].deleteUser(*this);
+        begin++;
     }
 }
 

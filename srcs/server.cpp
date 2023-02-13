@@ -76,6 +76,8 @@ Server::Server(int port_, std::string password_) {
     commands["MODE"] = 10;
     commands["KICK"] = 11;
     commands["INVITE"] = 12;
+    commands["LIST"] = 13;
+    commands["NAMES"] = 14;
 }
 
 Server::~Server() {
@@ -245,37 +247,43 @@ void Server::parseCommands(std::string content, int userSocket) {
                 PASS(user);// test passed
                 break   ;
             case 2:
-                NICK(user);// test passed (TODO need one more)
+                NICK(user);// test passed
                 break ;
             case 3:
                 USER(user, args);// test passed
                 break ;
             case 4:
-                PRIVMSG(user, args);// TODO test
+                PRIVMSG(user, args);// test passed
                 break ;
             case 5:
                 PING(user, args);// test passed
                 break ;
             case 6:
-                NOTICE(user,args);// TODO test
+                NOTICE(user,args);// test passed
                 break ;
             case 7:
-                QUIT(user, args);// test passed (TODO need one more)
+                QUIT(user, args);// test passed
                 break ;
             case 8:
                 JOIN(user);// TODO test
                 break ;
             case 9:
-                TOPIC(user, args);// TODO test
+                TOPIC(user, args);// test passed
                 break ;
             case 10:
-                MODE(user);// TODO test
+                MODE(user);// test passed
                 break ;
             case 11:
-                KICK(user, args);// TODO test
+                KICK(user, args);// test passed
                 break ;
             case 12:
-                INVITE(user);// TODO test
+                INVITE(user);// test passed
+                break ;
+            case 13:
+                LIST(user); // TODO test
+                break ;
+            case 14:
+                NAMES(user); // TODO test
                 break ;
         }
 

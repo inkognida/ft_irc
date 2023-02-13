@@ -36,11 +36,14 @@ void                Channel::addUser(User &user) {
 
 void                Channel::addOperator(User &user) {
     this->operators.insert(user.getSocket());
-    user.setMode("+o");
 }
 
 void                Channel::addMode(std::string mode_) {
     this->modes.insert(mode_);
+}
+
+void                Channel::deleteMode(std::string mode_) {
+    this->modes.erase(mode_);
 }
 
 std::string         Channel::getUsersInfo(std::map<int, User> &clients) const {
@@ -107,7 +110,8 @@ void        Channel::sendNotificationMsg(std::map<int, User> &clients, std::stri
 
 
 void        Channel::sendNotificationTopic(User &user) {
-    user.setBackMSG(SERVER + std::to_string(RPL_TOPIC) + " " + user.getCmd() + " = " + getName() + " : " + getTopic());
+    user.setBackMSG(SERVER + std::to_string(RPL_TOPIC) + " " +
+            user.getCmd() + " = " + getName() + " : " + getTopic());
 }
 
 bool        Channel::findMode(std::string mode) const {

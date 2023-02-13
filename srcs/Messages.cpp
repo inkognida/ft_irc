@@ -2,7 +2,7 @@
 
 void    Server::channelPRIVMSG(User &user, std::string content) {
     if (Channels[commandsParse[1]].findMode("+m")) {
-        if (Channels[commandsParse[1]].findOper(user) || user.checkMode("+v")) {
+        if (Channels[commandsParse[1]].findOper(user) || user.checkChannelMode(commandsParse[1], "+v")) {
             Channels[commandsParse[1]].sendNotificationMsg(Users, content, user);
         } else
             backMSG(user, ERR_CANNOTSENDTOCHAN, user.getCmd());
@@ -44,12 +44,11 @@ void    Server::PRIVMSG(User &user, std::string content) {
     }
 
     Users[target].setBackMSG(SERVER + std::string("= ") + user.getNickname() + ": " + content);
-    user.setBackMSG(SERVER + std::string(" = ") + "target - " + Users[target].getNickname() + ": " + content);
 }
 
 void    Server::channelNOTICE(User &user, std::string content) {
     if (Channels[commandsParse[1]].findMode("+m")) {
-        if (Channels[commandsParse[1]].findOper(user) || user.checkMode("+v")) {
+        if (Channels[commandsParse[1]].findOper(user) || user.checkChannelMode(commandsParse[1], "+v")) {
             Channels[commandsParse[1]].sendNotificationMsg(Users, content, user);
         } else
             return ;
@@ -81,6 +80,5 @@ void    Server::NOTICE(User &user, std::string content) {
         return ;
 
     Users[target].setBackMSG(SERVER + std::string("= ") + user.getNickname() + ": " + content);
-    user.setBackMSG(SERVER + std::string(" = ") + "target - " + Users[target].getNickname() + ": " + content);
     return ;
 }

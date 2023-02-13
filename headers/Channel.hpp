@@ -14,10 +14,11 @@ public:
     void                setPass(std::string);
     void                setTopic(std::string);
 
+    void                addMode(std::string);
+    void                deleteMode(std::string);
+
     void                addUser(User&);
     void                addOperator(User&);
-    void                addMode(std::string);
-
     void                deleteUser(User&);
     void                deleteOper(User&);
 
