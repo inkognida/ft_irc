@@ -265,7 +265,7 @@ void Server::parseCommands(std::string content, int userSocket) {
                 QUIT(user, args);// test passed
                 break ;
             case 8:
-                JOIN(user);// TODO test
+                JOIN(user);// test passed
                 break ;
             case 9:
                 TOPIC(user, args);// test passed
@@ -280,10 +280,10 @@ void Server::parseCommands(std::string content, int userSocket) {
                 INVITE(user);// test passed
                 break ;
             case 13:
-                LIST(user); // TODO test
+                LIST(user); // test passed
                 break ;
             case 14:
-                NAMES(user); // TODO test
+                NAMES(user); // test passed
                 break ;
         }
 
@@ -308,17 +308,17 @@ void    Server::fileTransfer(User &user) {
         simpleErrorExit("Failed to get length");
     file.seekg(0, file.beg);
 
-    char * buffer = new char [length];
+    char * buf = new char [length];
 
-    if (!file.read(buffer,length))  {
+    if (!file.read(buf,length))  {
         file.close();
         simpleErrorExit("Failed to read");
     }
 
-    send(user.getSocket(), buffer, length, 0); //not setBackMSG because of possible size
+    send(user.getSocket(), buf, length, 0); //we don't user setBackMSG because of possible size
 
     file.close();
-    delete[] buffer; // TODO check deallocated problem
+    delete[] buf;
 }
 
 void    Server::handleConnection(int userSocket) {
@@ -342,6 +342,7 @@ void    Server::handleConnection(int userSocket) {
         commandsParse.clear();
         memset(buffer, 0, 4096);
     }
+
 }
 
 void    Server::simpleErrorExit(std::string error) {

@@ -19,3 +19,7 @@
 # include "Channel.hpp"
 # include "Server.hpp"
 # include <fcntl.h>
+
+
+bool                        correctName(std::string name);
+std::vector<std::string>    splitChannelArgs(std::string &names);

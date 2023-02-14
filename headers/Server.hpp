@@ -78,11 +78,11 @@ public:
     int     getSocket(void) { return this->serverSocket; }
 
     // output with cmd
-    void                        outUsersCmd(User&, std::string);
-    void                        outChannelsCmd(User&, std::string);
+    void                        outAllUsersCmd(User&, std::string);
+    void                        outAllChannelsCmd(User&, std::string);
 
-    // output channels info with cmd
-    void                        outChannelsInfoCmd(User&, std::string);
+    // output current channels with cmd
+    void                        outCurrentChannelsCmd(User&, std::string);
 
     // parse
     void                        parseCommands(std::string,int);

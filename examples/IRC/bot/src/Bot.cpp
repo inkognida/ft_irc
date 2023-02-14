@@ -76,7 +76,7 @@ void Bot::createSockets( void ) {
 	int IRCport = static_cast<in_port_t>(strtol(_IRCatServerPort.c_str(), NULL, 10));
 	int APIport = static_cast<in_port_t>(strtol(_API_Port.c_str(), NULL, 10));
 		
-	_IRCsocket = new Socket(_IRCatServerIP, IRCport);
+//	_IRCsocket = new Socket(_IRCatServerIP, IRCport);
 	_APIsocket = new Socket(_API_IP, APIport);
 		
 	_IRCsocket->tryToConnect();
@@ -131,17 +131,21 @@ void Bot::parseMessage(const string &msg) {
 }
 
 string Bot::requestAPI( const string &name) {
-	std::stringstream ss;
+    std::stringstream ss;
 
 	ss << "GET " << getLocationURL(name) << " HTTP/1.1\r\n";
 	ss << "\n\n";
-    
-	std::cout << ss.str() << std::endl;
+
+    ss << "    GET /data/2.5/weather?lat=44.34&lon=10.99&appid=0162fdab085f4b6ab262e76ffc309667 HTTP/1.1\n"
+          "    Host: api.openweathermap.org" << "\n\n";
+
+    std::cout << ss.str() << std::endl;
 	_APIsocket->tryToSend(ss.str());
 	
 	char buf[2048] = {0};
 	int res = read(_APIsocket->getFd(), buf, 2047);
-	
+
+    std::cout << buf << std::endl;
 	if (res != -1) {
 		return string(buf);
 	} else {

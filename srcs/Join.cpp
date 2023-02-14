@@ -1,6 +1,6 @@
 #include "../headers/irc.hpp"
 
-static std::vector<std::string> splitChannelArgs(std::string &names) {
+std::vector<std::string> splitChannelArgs(std::string &names) {
     std::vector<std::string> res;
 
     if (names.empty())
@@ -16,7 +16,7 @@ static std::vector<std::string> splitChannelArgs(std::string &names) {
     return res;
 }
 
-static bool correctName(std::string name) {
+bool correctName(std::string name) {
     if (name.size() > 50 || name[0] != '#')
         return false;
     for (size_t i = 1; i < name.size(); i++) {
@@ -26,7 +26,7 @@ static bool correctName(std::string name) {
     return true;
 }
 
-void                       Server::outUsersCmd(User &user, std::string cmd)  {
+void                       Server::outAllUsersCmd(User &user, std::string cmd)  {
     std::map<int, User>::const_iterator begin = Users.begin();
     std::map<int, User>::const_iterator end = Users.end();
 
@@ -37,7 +37,7 @@ void                       Server::outUsersCmd(User &user, std::string cmd)  {
     }
 }
 
-void                       Server::outChannelsCmd(User &user, std::string cmd)  {
+void                       Server::outAllChannelsCmd(User &user, std::string cmd)  {
     std::map<std::string, Channel>::const_iterator begin = Channels.begin();
     std::map<std::string, Channel>::const_iterator end = Channels.end();
 
@@ -51,7 +51,7 @@ void                       Server::outChannelsCmd(User &user, std::string cmd)  
     }
 }
 
-void                        Server::outChannelsInfoCmd(User &user, std::string cmd)  {
+void                        Server::outCurrentChannelsCmd(User &user, std::string cmd)  {
     std::vector<std::string> names = splitChannelArgs(commandsParse[1]);
 
     for (size_t i = 0; i < names.size(); i++) {
@@ -63,23 +63,31 @@ void                        Server::outChannelsInfoCmd(User &user, std::string c
             user.setBackMSG(SERVER + std::to_string(RPL_LIST) + " " + names[i] + " topic: " +
                             Channels[names[i]].getTopic());
         else if (cmd == "NAMES")
+            user.setBackMSG(SERVER + std::to_string(RPL_NAMREPLY) + " " + names[i] + " users: " +
+                            Channels[names[i]].getUsersInfo(Users) + Channels[names[i]].getOperatorsInfo(Users));
+        else if (cmd == "LIST users")
             user.setBackMSG(SERVER + std::to_string(RPL_LIST) + " " + names[i] + " users: " +
                             Channels[names[i]].getUsersInfo(Users) + Channels[names[i]].getOperatorsInfo(Users));
     }
 }
 
 void    Server::LIST(User &user) {
-    if (commandsParse.size() < 1 || commandsParse.size() > 2) {
+    if (commandsParse.size() < 1 || commandsParse.size() > 3) {
         backMSG(user, ERR_NEEDMOREPARAMS, user.getCmd());
         return ;
     }
 
-    if (commandsParse.size() == 1) {
-        outChannelsCmd(user, "LIST");
+    if (commandsParse.size() == 3 && commandsParse[2] == "users") {
+        outCurrentChannelsCmd(user, "LIST users");
         return ;
     }
 
-    outChannelsInfoCmd(user, "LIST");
+    if (commandsParse.size() == 1) {
+        outAllChannelsCmd(user, "LIST");
+        return ;
+    }
+
+    outCurrentChannelsCmd(user, "LIST");
 }
 
 
@@ -90,12 +98,12 @@ void    Server::NAMES(User &user) {
     }
 
     if (commandsParse.size() == 1) {
-        outChannelsCmd(user, "NAMES");
-        outUsersCmd(user, "NAMES");
+        outAllChannelsCmd(user, "NAMES");
+        outAllUsersCmd(user, "NAMES");
         return ;
     }
 
-    outChannelsInfoCmd(user, "NAMES");
+    outCurrentChannelsCmd(user, "NAMES");
 }
 
 void    Server::channelJOIN(User &user, std::string name, bool create, std::string passwd = "") {
