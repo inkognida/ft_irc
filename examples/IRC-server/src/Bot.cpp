@@ -1,7 +1,9 @@
 #include "Bot.hpp"
 #include "Message.hpp"
 #include "utils.hpp"
-
+#include <string>
+#include <fstream>
+#include <sstream>
 Bot::Bot(const string &filename) 
 : _configFile(filename), _configLoaded(false), _IRCsocket(0), _APIsocket(0), _isActive(false) {
 	loadConfig();
@@ -38,34 +40,20 @@ Bot &Bot::operator=(const Bot &other) {
 
 void Bot::loadConfig( void ) {
 
-	JSON::Object *conf = NULL;
-	try {
-		conf = JSON::parseFile(_configFile);
-	} catch (std::exception &e) {
-		std::cerr << e.what() << std::endl;
-	}
 
-	if (conf == NULL) {
-		_configLoaded = false;
-	}
-	else {
-		_IRCatServerIP = conf->get("IRCatServerIP")->toStr();
-		_IRCatServerPort = conf->get("IRCatServerPort")->toStr();
-		_IRCatServerPass = conf->get("IRCatServerPass")->toStr();
-		_username = conf->get("Username")->toStr();
-		_hostname = conf->get("Hostname")->toStr();
-		_servername = conf->get("Servername")->toStr();
-		_realname = conf->get("Realname")->toStr();
-		_nickname = conf->get("Nickname")->toStr();
-		_API_Protocol = conf->get("API-protocol")->toStr();
-		_API_IP = conf->get("API-ip")->toStr();
-		_API_Port = conf->get("API-port")->toStr();
-		_botname = conf->get("Botname")->toStr();
+	_IRCatServerIP = "127.0.0.1";
+	_IRCatServerPort = "6667";
+	_IRCatServerPass = "123";
+	_username = "where_is_bot";
+	_hostname = "127.0.0.1";
+	_servername = "PUSSY";
+	_realname = "where_is_bot";
+	_nickname = "wherebot";
+	_API_Protocol = "http";
+	_API_IP = "37.139.1.159";
+	_API_Port = "80";
+	_botname = "wherebot";
 
-		delete conf;
-
-		_configLoaded = true;
-	}
 }
 
 bool Bot::confLoaded( void ) {
@@ -76,12 +64,10 @@ void Bot::createSockets( void ) {
 	int IRCport = static_cast<in_port_t>(strtol(_IRCatServerPort.c_str(), NULL, 10));
 	int APIport = static_cast<in_port_t>(strtol(_API_Port.c_str(), NULL, 10));
 		
-//	_IRCsocket = new Socket(_IRCatServerIP, IRCport);
+	_IRCsocket = new Socket(_IRCatServerIP, IRCport);
 	_APIsocket = new Socket(_API_IP, APIport);
 		
 	_IRCsocket->tryToConnect();
-    std::cout << "HERE" << std::endl;
-
 	_APIsocket->tryToConnect();
 	
 	fcntl(_IRCsocket->getFd(), F_SETFL, O_NONBLOCK);
@@ -131,21 +117,17 @@ void Bot::parseMessage(const string &msg) {
 }
 
 string Bot::requestAPI( const string &name) {
-    std::stringstream ss;
+	std::stringstream ss;
 
 	ss << "GET " << getLocationURL(name) << " HTTP/1.1\r\n";
 	ss << "\n\n";
-
-    ss << "    GET /data/2.5/weather?lat=44.34&lon=10.99&appid=0162fdab085f4b6ab262e76ffc309667 HTTP/1.1\n"
-          "    Host: api.openweathermap.org" << "\n\n";
-
-    std::cout << ss.str() << std::endl;
+    
+	std::cout << ss.str() << std::endl;
 	_APIsocket->tryToSend(ss.str());
 	
 	char buf[2048] = {0};
 	int res = read(_APIsocket->getFd(), buf, 2047);
-
-    std::cout << buf << std::endl;
+	
 	if (res != -1) {
 		return string(buf);
 	} else {

@@ -4,11 +4,11 @@
 	"IRCatServerPass": "123",
 	"Username": "where_is_bot",
 	"Hostname": "127.0.0.1",
-	"Servername": "IRCat",
+	"Servername": "PUSSY",
 	"Realname": "where_is_bot",
 	"Nickname": "wherebot",
 	"API-protocol": "http",
-	"API-ip": "165.227.141.103",
-	"API-port": "5559",
+	"API-ip": "37.139.1.159",
+	"API-port": "80",
 	"Botname": "wherebot"
 }

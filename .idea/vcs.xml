@@ -5,12 +5,14 @@
     <mapping directory="$PROJECT_DIR$/examples/42-ft-irc" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/42-ft_irc" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/IRC" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/examples/IRC-Server" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/examples/IRC-server" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/examples/IRC-server/json-parser" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/IRC/json-parser" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/ft_irc" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/irc1" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/irc2" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/irca" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/examples/ircf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/json" vcs="Git" />
   </component>
 </project>

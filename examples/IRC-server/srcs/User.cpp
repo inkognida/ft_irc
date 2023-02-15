@@ -97,6 +97,7 @@ int		User::readMessage()
 		if (text.find('\n') != std::string::npos)
 			break;
 	}
+	std::cout << std::string(buffer) << std::endl;
 	if (text.length() > 512)
 		text = text.substr(0, 510) + "\r\n";
 	if (bytesRead == 0)
