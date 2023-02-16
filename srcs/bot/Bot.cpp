@@ -260,23 +260,32 @@ struct srv {
     sockaddr_in     addr;
 };
 
+// bot
 class Bot {
 public:
     Bot();
     ~Bot();
 
-    void    initApi();
-    void    initIrc();
+    void    init(srv&);
 
     void    authIrc();
-    void    getIrc();
+    void    getIrcReq();
 
-    void    getApi();
+    std::string    getApiReq(std::string, std::string);
     //tools
-    void    hostnameIP(std::string);
-    void    err(std::string);
-    int     ping(std::string);
-    void    sigHand(int);
+    void            hostnameIP(std::string);
+    void            err(std::string);
+    void            sigHand(int);
+    std::string     recvFunc(int);
+
+    void    initAPI();
+
+
+    void    toSend(srv&, std::string);
+
+    //getters
+    srv&    getApi(void) { return this->api; };
+    srv&    getIrc(void) { return this->irc; };
 
 private:
     srv api;
@@ -303,47 +312,46 @@ Bot::Bot() {
 
 Bot::~Bot() {}
 
-void Bot::initApi() {
-    api.fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (api.fd < 0)
+void    Bot::init(srv &srvinfo) {
+    srvinfo.fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (srvinfo.fd < 0)
         err("Failed to create socket");
-    memset(&api.addr, 0, sizeof(api.addr));
-    api.addr.sin_family = AF_INET;
-    api.addr.sin_port = htons(api.port);
-    hostnameIP(api.hostname);
-    api.addr.sin_addr.s_addr = inet_addr(ip);
+
+    srvinfo.addr.sin_family = AF_INET;
+    srvinfo.addr.sin_port = htons(srvinfo.port);
+
+    // TODO check this section
+    hostnameIP(srvinfo.hostname);
+    srvinfo.addr.sin_addr.s_addr = inet_addr(ip);
     memset(ip, 0, 4096);
-    if (connect(api.fd, (struct sockaddr*)&api.addr, sizeof(api.addr)) < 0)
-        err("Failed to connect api");
 
-    fcntl(api.fd, F_SETFL, O_NONBLOCK);
+    if (connect(srvinfo.fd, (struct sockaddr*)&srvinfo.addr, sizeof(srvinfo.addr)) < 0)
+        err("Failed to connect");
 
+    // TODO ANALYZE
+    if (srvinfo.port == 6667) {
+        fcntl(srvinfo.fd, F_SETFL, O_NONBLOCK);
+    }
 }
 
-void Bot::initIrc() {
-    irc.fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (irc.fd < 0)
-        err("Failed to create socket");
-    memset(&irc.addr, 0, sizeof(irc.addr));
-    irc.addr.sin_family = AF_INET;
-    irc.addr.sin_port = htons(irc.port);
-    hostnameIP(irc.hostname);
-    irc.addr.sin_addr.s_addr = inet_addr(ip);
-    memset(ip, 0, 4096);
-    if (connect(irc.fd, (struct sockaddr*)&irc.addr, sizeof(irc.addr)) < 0)
-        err("Failed to connect irc");
-
-    fcntl(irc.fd, F_SETFL, O_NONBLOCK);
-}
-
-int             Bot::ping(std::string hostIP) {
-    std::string tmp = "ping -c1 -s1 "+hostIP+"  > /dev/null 2>&1";
-    int x = std::system(tmp.c_str());
-    if (x == 0)
-        return (1);
-    else
-        return (0);
-}
+//void    Bot::initAPI() {
+//    api.fd = socket(AF_INET, SOCK_STREAM, 0);
+//
+//
+//    if (irc.fd < 0)
+//        exit(1);
+//    memset(&api.addr, 0, sizeof(api.addr));
+//
+//    api.addr.sin_family = AF_INET;
+//    api.addr.sin_port = htons(80);
+//    api.addr.sin_addr.s_addr = inet_addr("37.139.1.159");
+//
+//
+//    if (connect(api.fd, (struct sockaddr*)&api.addr, sizeof(api.addr)) < 0){
+//        std::cout << "connect\n";
+//        exit(1);
+//    }
+//}
 
 void             Bot::err(std::string reason) {
     std::cout << reason << std::endl;
@@ -367,35 +375,104 @@ void            Bot::hostnameIP(std::string hostname) {
 
     for (p = servinfo; p != NULL; p = p->ai_next) {
         h = (struct sockaddr_in *) p->ai_addr;
-        if (ping(std::string(inet_ntoa(h->sin_addr))))
-            strcpy(ip, inet_ntoa(h->sin_addr));
+        strcpy(ip, inet_ntoa(h->sin_addr));
     }
 
     freeaddrinfo(servinfo);
 }
 
-void    Bot::getApi() {
-    std::stringstream in;
+std::string    Bot::getApiReq(std::string lat, std::string lon) {
+    std::stringstream  in;
+    in << "GET /data/2.5/weather?lat=" << "64.34" << "&lon=" << "10.99" << "&appid=" << "0162fdab085f4b6ab262e76ffc309667" << " HTTP/1.1\r\n"
+       << "Host: api.openweathermap.org\r\n" << "Accept: application/json\r\n" << "Connection: close\r\n" << "\r\n";
 
-    lat = "64.34";
-    lon = "10.99";
 
-    in << "GET /data/2.5/weather?lat=" << lat << "&lon=" << lon << "&appid=" << api.token << " HTTP/1.1\r\n"
-              "Host: api.openweathermap.org\r\n"
-              "Accept: application/json\r\n"
-              "Connection: close\r\n" << "\r\n";
-
-    if (send(api.fd, in.str().c_str(), in.str().length(), 0) < 0)
+    if (send(getApi().fd, in.str().c_str(), in.str().length(), 0) < 0)
         err("Failed to send api");
 
-    char buf[4096] = {0};
-    int rd = read(api.fd, buf, 4096);
+    char buf[4096];
 
-    if (rd < 0)
-        err("Failed to read api");
+    int rd = recv(getApi().fd, buf, 4096, 0);
+    std::string tmp(buf);
 
-    std::string tmp(buf, sizeof(buf));
-    memset(buf, 0, 4096);
+
+    std::string apiResponse;
+    size_t found = tmp.find("name");
+    if (found != std::string::npos) {
+        found += std::string("name: ").length();
+        while (tmp[found] != ',') {
+            apiResponse += tmp[found];
+            found++;
+        }
+        apiResponse += "\n";
+    } else
+        apiResponse = "Something went wrong\n";
+
+    return apiResponse;
+}
+
+std::string    Bot::recvFunc(int fd) {
+    char buf[2048];
+    memset(buf, 0, 2048);
+
+    int MAX_LEN = 4096;
+    unsigned total_bytes_received = 0;
+
+    int rd = recv(fd, buf+total_bytes_received, MAX_LEN, 0);
+    if (rd == 0) // socket closed by peer
+        err("rd");
+    else if (rd == -1) {
+        if ((EAGAIN == errno) || (EWOULDBLOCK == errno)) // no data to be read on socket
+            usleep(10);
+        else
+            err("Errno");
+    } else
+        total_bytes_received += rd;
+
+    write(1, buf, total_bytes_received);
+    return std::string(buf);
+}
+
+void    Bot::toSend(srv &srvinfo, std::string in) {
+    if (send(irc.fd, in.c_str(), in.length(), 0) < 0)
+        err("Failed to send to irc");
+}
+
+void    Bot::authIrc() {
+    std::string userInput;
+    for (int i = 0; i < 1; i++) { // TODO use i < 3
+        getline(std::cin, userInput);
+        if (send(irc.fd, userInput.c_str(), userInput.length() + 1, 0) < 0)
+            exit(1);
+    }
+}
+
+bool work = true;
+void Bot::sigHand(int num) {
+    (void)num;
+    work = false;
+}
+
+
+std::string gg(int fd) {
+    std::stringstream in;
+    char buf[2048] = {0};
+    int rd;
+
+    in << "GET /data/2.5/weather?lat=" << "66.34" << "&lon=" << "10.99" << "&appid=" << "0162fdab085f4b6ab262e76ffc309667" << " HTTP/1.1\r\n"
+       << "Host: api.openweathermap.org\r\n" << "Accept: application/json\r\n" << "Connection: close\r\n" << "\r\n";
+
+    if (send(fd, in.str().c_str(), in.str().length(), 0) < 0) {
+        std::cout << std::strerror(errno);
+    }
+
+    rd = read(fd, buf, 2047);
+    std::cout << std::string(buf) << std::endl;
+    if (rd == -1)
+        return "";
+
+    std::string tmp(buf);
+    std::string apiResponse;
 
     size_t found = tmp.find("name");
     if (found != std::string::npos) {
@@ -407,106 +484,228 @@ void    Bot::getApi() {
         apiResponse += "\n";
     } else
         apiResponse = "Something went wrong\n";
+
+    memset(buf, 0, 2048);
+    return apiResponse;
 }
 
-void    Bot::getIrc() {
-
-}
-
-#ifdef __APPLE__
-#define IRC_NOSIGNAL SO_NOSIGPIPE
-#else
-#define IRC_NOSIGNAL MSG_NOSIGNAL
-#endif
-void    Bot::authIrc() {
-    std::string pass = "PASS 123";
-    std::string nickname = "NICKNAME bot";
-    std::string user = "USER bot bot bot bot";
-
-    if (send(irc.fd, pass.c_str(), pass.length(), 0) < 0)
-        err("Failed to auth irc");
-
-    if (send(irc.fd, nickname.c_str(), nickname.length(), 0) < 0)
-        err("Failed to auth irc");
-
-    if (send(irc.fd, user.c_str(), user.length(), 0) < 0)
-        err("Failed to auth irc");
-
-//    char buf[4096];
-//    memset(buf, 0, 4096);
-//
-//    int rd = recv(irc.fd, buf, 4096, 0);
-//    if (rd < 0)
-//        err("Failed to recv irc");
-//    std::cout << std::string(buf) << std::endl;
-}
-
-bool work = true;
-
-void Bot::sigHand(int num) {
-    (void)num;
-    work = false;
-}
 
 int main() {
-//    Bot bot;
+    Bot bot;
+    bot.init(bot.getIrc());
+//    bot.init(bot.getApi());
 
-//    bot.initIrc();
 
     srv irc;
     irc.fd = socket(AF_INET, SOCK_STREAM, 0);
+
+
     if (irc.fd < 0)
         exit(1);
     memset(&irc.addr, 0, sizeof(irc.addr));
 
     irc.addr.sin_family = AF_INET;
-    irc.addr.sin_port = htons(6667);
-    irc.addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-    char buf[4096];
-    std::string userInput;
+    irc.addr.sin_port = htons(80);
+    irc.addr.sin_addr.s_addr = inet_addr("37.139.1.159");
 
 
     if (connect(irc.fd, (struct sockaddr*)&irc.addr, sizeof(irc.addr)) < 0){
         std::cout << "connect\n";
         exit(1);
     }
-    fcntl(irc.fd, F_SETFL, O_NONBLOCK);
+
+    bot.authIrc();
+
+    std::string r = gg(irc.fd);
+    std::string r1 = gg(irc.fd);
+
+    std::cout << r << std::endl;
+    std::cout << r1 << std::endl;
+
+//    int i = 0;
+//    while (work && i < 10) {
+//        std::string tmp = bot.recvFunc(bot.getIrc().fd);
+////        std::string response = "PRIVMSG a " + gg(irc.fd);
+//        i++;
+//
+////        if (tmp.length() != 0 && tmp.find(":PUSSY") != std::string::npos) {
+////            std::string response = "PRIVMSG a " + gg(irc.fd);
+////            int s = send(bot.getIrc().fd, response.c_str(), response.length()+1, 0);
+////            if (s < 0)
+////                exit(1);
+////        }
+//
+////        if (tmp.find(":PUSSY") != std::string::npos)
+////        int s = send(bot.getIrc().fd, response.c_str(), response.length()+1, 0);
+////        if (s < 0)
+////            exit(1);
+//    }
+
+//    bot.init(bot.getApi());
+
+//    std::stringstream in;
 
 
-    userInput = "hello";
-    int sendResult = send(irc.fd, userInput.c_str(), userInput.length()+1, 0);
-    if (sendResult != -1)
-    memset(buf, 0, 4096);
-    int rb = recv(irc.fd, buf, 4096, 0);
-    if (rb > 0)
-        std::cout << std::string(buf, 0, rb);
+//    in << "GET /data/2.5/weather?lat=" << "66.34" << "&lon=" << "10.99" << "&appid=" << "0162fdab085f4b6ab262e76ffc309667" << " HTTP/1.1\r\n"
+//       << "Host: api.openweathermap.org\r\n" << "Accept: application/json\r\n" << "Connection: close\r\n" << "\r\n";
+//
+//
+//    if (send(bot.getApi().fd, in.str().c_str(), in.str().length(), 0) < 0)
+//        exit(1);
+//
+//    char buf[4096];
+//
+//    int rd = recv(bot.getApi().fd, buf, 4096, 0);
+//    std::string tmp(buf);
+//
+//    std::cout << tmp;
+//
+//    std::string apiResponse;
+//
+//    size_t found = tmp.find("name");
+//    if (found != std::string::npos) {
+//        found += std::string("name: ").length();
+//        while (tmp[found] != ',') {
+//            apiResponse += tmp[found];
+//            found++;
+//        }
+//        apiResponse += "\n";
+//    } else
+//        apiResponse = "Something went wrong\n";
+    return 0;
+}
 
-    while (work) {
-        std::cout << "> ";
-        getline(std::cin, userInput);
 
-        userInput += "\r\n";
+void main2() {
+    srv irc;
+    irc.fd = socket(AF_INET, SOCK_STREAM, 0);
 
-        if (userInput.size() > 0) {
-            int sendResult = send(irc.fd, userInput.c_str(), userInput.length()+1, 0);
 
-            memset(buf, 0, 4096);
-            int rb = recv(irc.fd, buf, 4096, 0);
-            if (rb > 0)
-                std::cout << std::string(buf, 0, rb);
-            }
+    if (irc.fd < 0)
+        exit(1);
+    memset(&irc.addr, 0, sizeof(irc.addr));
+
+    irc.addr.sin_family = AF_INET;
+    irc.addr.sin_port = htons(80);
+    irc.addr.sin_addr.s_addr = inet_addr("37.139.1.159");
+
+
+    if (connect(irc.fd, (struct sockaddr*)&irc.addr, sizeof(irc.addr)) < 0){
+        std::cout << "connect\n";
+        exit(1);
     }
 
+    std::stringstream in;
 
 
-//    bot.initIrc();
-//    bot.initApi();
+    in << "GET /data/2.5/weather?lat=" << "66.34" << "&lon=" << "10.99" << "&appid=" << "0162fdab085f4b6ab262e76ffc309667" << " HTTP/1.1\r\n"
+    << "Host: api.openweathermap.org\r\n" << "Accept: application/json\r\n" << "Connection: close\r\n" << "\r\n";
+
+
+    if (send(irc.fd, in.str().c_str(), in.str().length(), 0) < 0)
+        exit(1);
+
+    char buf[4096];
+
+    int rd = recv(irc.fd, buf, 4096, 0);
+    std::string tmp(buf);
+
+    std::cout << tmp;
+
+    std::string apiResponse;
+
+    size_t found = tmp.find("name");
+    if (found != std::string::npos) {
+        found += std::string("name: ").length();
+        while (tmp[found] != ',') {
+            apiResponse += tmp[found];
+            found++;
+        }
+        apiResponse += "\n";
+    } else
+        apiResponse = "Something went wrong\n";
+
 //
-//    bot.authIrc();
-//    while (work) {
+//
+//    //auth -> pass, nick, user
+//    std::string userInput;
+//    for (int i = 0; i < 1; i++) { // TODO use i < 3
+//        getline(std::cin, userInput);
+//        if (send(irc.fd, userInput.c_str(), userInput.length()+1, 0) < 0)
+//            exit(1);
 //    }
-//    bot.getApi();
+//
+//    std::string response;
+//    while (work) {
+//        std::string tmp; // = recvFunc(irc.fd);
+//        if (tmp.find(":PUSSY") != std::string::npos) {
+//            if (send(irc.fd, response.c_str(), response.length()+1, 0) < 0)
+//                exit(1);
+//            continue;
+//        }
+//    }
+
+    //    char buf[4096];
+//    int rd = recv(irc.fd, buf, 4096, 0);
+//    std::cout << std::string(buf);
+//    memset(buf, 0, 4096);
+//
+//    std::stringstream input;
+//    input << "PASS 123\n";
+//
+//    if (send(irc.fd, input.str().c_str(), input.str().length(), 0) < 0)
+//        exit(1);
+//
+//    std::stringstream nick;
+//    nick << "NAMES\n";
+//    if (send(irc.fd, nick.str().c_str(), nick.str().length(), 0) < 0)
+//        exit(1);
+//
+//    rd = recv(irc.fd, buf, 4096, 0);
+//    std::cout << std::string(buf);
+//    std::cout << rd << std::string(buf);
+//    memset(buf, 0, 4096);
+//
+//    std::stringstream input;
+//    input << "NAMES\n";
+//
+//    size_t s = send(irc.fd, input.str().c_str(), input.str().length(), 0);
+//    std::cout << s << std::endl;
+//    recvFunc(irc.fd);
+
+//
+//    rd = recv(irc.fd, buf, 4096, 0);
+//    std::cout << rd << std::string(buf);
+
+
+//    return 0;
+
+
+//    userInput = "hello";
+//    int sendResult = send(irc.fd, userInput.c_str(), userInput.length()+1, 0);
+//    if (sendResult != -1)
+//    memset(buf, 0, 4096);
+//    int rb = recv(irc.fd, buf, 4096, 0);
+//    if (rb > 0)
+//        std::cout << std::string(buf, 0, rb);
+//
+//    std::string userInput;
+//    while (work) {
+//        std::cout << "> ";
+//        getline(std::cin, userInput);
+//
+//        userInput += "\r\n";
+//
+//        if (userInput.size() > 0) {
+//            int sendResult = send(irc.fd, userInput.c_str(), userInput.length()+1, 0);
+//
+//            memset(buf, 0, 4096);
+//            int rb = recv(irc.fd, buf, 4096, 0);
+//            if (rb > 0)
+//                std::cout << std::string(buf, 0, rb);
+//            }
+//    }
+
 }
 
 //int main() {
