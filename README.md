@@ -48,4 +48,5 @@ CMD [args]
 
 <h3>Resources</h3>
 * file.txt: File with intro msg for users after successful registration
+* 
 * refs: Useful information about sockets and IRC. 
