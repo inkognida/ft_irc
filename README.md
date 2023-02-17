@@ -16,6 +16,7 @@ cd ft_irc
 make
 ./ircserv port password
 ```
+
 * port: The port number on which your IRC server will be listening to for incoming
 IRC connections. <br>
 * password: The connection password. It will be needed by any IRC client that tries
