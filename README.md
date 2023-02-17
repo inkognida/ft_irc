@@ -9,7 +9,7 @@ Here you can read more about the concept https://en.wikipedia.org/wiki/Internet_
 
 <h2>USAGE</h2>
 Some basic Git commands are:
-```
+> ```
 [X] PASS
 [X] USER
 [X] NICK
