@@ -47,6 +47,5 @@ CMD [args]
 * Internet Relay Chat: Channel Management: https://www.rfc-editor.org/rfc/rfc2811
 
 <h3>Resources</h3>
-* file.txt: File with intro msg for users after successful registration
-* 
+* file.txt: File with intro msg for users after successful registration <br>
 * refs: Useful information about sockets and IRC. 
