@@ -9,11 +9,9 @@ Here you can read more about the concept https://en.wikipedia.org/wiki/Internet_
 
 <h2>USAGE</h2>
 Some basic Git commands are:
-```
- git status
- git add
- git commit
-```
+`sdsd
+sdsd 
+dsds`
 <h4>Server</h4>
 ```
 git clone https://github.com/inkognida/ft_irc
