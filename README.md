@@ -15,7 +15,6 @@ Here you can read more about the concept https://en.wikipedia.org/wiki/Internet_
 git clone https://github.com/inkognida/ft_irc
 cd ft_irc
 make
-
 ./ircserv port password
 ```
 
@@ -26,20 +25,24 @@ to connect to your server <br>
 
 
 <h4>Client</h4>
+
 ```
 nc -c localhost 6667
 ```
 
 <h4>Bot</h4>
+
 ```
 cd srcs/bot/
 c++ -std=c++98 Bot.cpp && ./a.out | cat -e
 ```
 
 <h4>Communications </h4>
+
 ```
 CMD [args]
 ```
+
 * Internet Relay Chat: Client Protocol: https://www.rfc-editor.org/rfc/rfc2811
 * Internet Relay Chat: Channel Management: https://www.rfc-editor.org/rfc/rfc2811
 
