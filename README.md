@@ -14,6 +14,7 @@ Here you can read more about the concept https://en.wikipedia.org/wiki/Internet_
 git clone https://github.com/inkognida/ft_irc
 cd ft_irc
 make
+
 ./ircserv port password
 ```
 
