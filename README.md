@@ -9,9 +9,28 @@ Here you can read more about the concept https://en.wikipedia.org/wiki/Internet_
 
 <h2>USAGE</h2>
 Some basic Git commands are:
-```sdds
-dsds
-sdsds
+```
+[X] PASS
+[X] USER
+[X] NICK
+[X] VERSION
+[X] LUSERS
+[X] INFO
+[X] MODE  //progress need make test
+[X] PRIVMSG
+[X] NOTICE
+[X] PING
+[X] PONG
+[X] JOIN //work in error
+[X] QUIT
+[X] OPER //need test
+[X] PART
+[X] TOPIC
+[X] NAMES // in progress
+[X] TIME
+[X] INVITE
+[X] KICK
+[X] HELP
 ```
 <h4>Server</h4>
 ```
