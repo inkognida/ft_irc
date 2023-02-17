@@ -22,9 +22,7 @@ make
 IRC connections. <br>
 * password: The connection password. It will be needed by any IRC client that tries
 to connect to your server <br>
-```
-./ircserv 6667 123
-```
+
 
 <h4>Client</h4>
 ```
