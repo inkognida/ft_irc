@@ -8,9 +8,16 @@ Here you can read more about the concept https://en.wikipedia.org/wiki/Internet_
 <br>
 
 <h2>USAGE</h2>
+## Разделительная черта
+При использовании
 ```
 ____
 ```
+получается разделительная черта
+____
+[:arrow_up:Оглавление](#Оглавление)
+___
+## Заголовки
 
 <h4>Server</h4>
 ```
