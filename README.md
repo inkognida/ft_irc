@@ -10,10 +10,12 @@ Here you can read more about the concept https://en.wikipedia.org/wiki/Internet_
 <h2>USAGE</h2>
 
 <h4>Server</h4>
-```git clone https://github.com/inkognida/ft_irc
+```
+git clone https://github.com/inkognida/ft_irc
 cd ft_irc
 make
-./ircserv port password```
+./ircserv port password
+```
 * port: The port number on which your IRC server will be listening to for incoming
 IRC connections. <br>
 * password: The connection password. It will be needed by any IRC client that tries
