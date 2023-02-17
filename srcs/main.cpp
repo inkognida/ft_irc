@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Main.cpp                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: hardella <hardella@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2023/02/17 16:17:47 by hardella          #+#    #+#             */
+/*   Updated: 2023/02/17 16:17:47 by hardella         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 # include "../headers/irc.hpp"
 
 struct port_password {
@@ -5,14 +17,13 @@ struct port_password {
     std::string password;
 };
 
-
 port_password parser(int argc, char **argv) {
     port_password input;
     int port;
 
     port = std::atoi(argv[argc - 2]);
 
-    if (port >= 1 && port <= 65535 && argv[argc - 1]) {
+    if (port >= 1024 && port <= 65535 && argv[argc - 1]) {
         input.port = port;
         input.password = argv[argc - 1];
     } else {

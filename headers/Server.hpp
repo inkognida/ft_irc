@@ -4,9 +4,9 @@
 class User;
 class Channel;
 
-
 # include "irc.hpp"
 
+// DEFINES
 #define SERVER ":PUSSY "
 #define WELCOME_MESSAGE "Welcome to our PUSSY IRC server\n"
 
@@ -49,7 +49,7 @@ class Channel;
 //MODE
 #define ERR_UNKNOWNMODE 472
 #define RPL_NAMREPLY 353
-// CUSTOM defines
+// CUSTOM
 #define RPL_CREATECHANNEL 502
 #define RPL_JOINCHANNEL 503
 #define RPL_VOICEPRIVILEGE 504
@@ -63,19 +63,19 @@ public:
     Server(int, std::string);
     ~Server();
 
-    void    execute();
-    void    sigHandler(int);
-    void    acceptConnection();
-    void    handleConnection(int userSocket);
-    void    sendConnection(int userSocket);
+    void                        execute();
+    void                        sigHandler(int);
+    void                        acceptConnection();
+    void                        handleConnection(int userSocket);
+    void                        sendConnection(int userSocket);
 
     //extra
-    void    simpleErrorExit(std::string);
-    int     userExists(std::string);
-    int     userInfoExists(std::string);
+    void                        simpleErrorExit(std::string);
+    int                         userExists(std::string);
+    int                         userInfoExists(std::string);
 
     // getters
-    int     getSocket(void) { return this->serverSocket; }
+    int                         getSocket(void) { return this->serverSocket; }
 
     // output with cmd
     void                        outAllUsersCmd(User&, std::string);
@@ -138,6 +138,9 @@ private:
     sockaddr_in                         clientAddress;
 
     std::string                         response;
+
+    // bonus
+    char*                               fileBuffer;
 };
 
 #endif

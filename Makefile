@@ -8,17 +8,17 @@ HEADERS = ./headers/*.hpp
 
 NAME = ircserv
 
-
 all: $(NAME)
 
 $(NAME): $(SRCS) $(HEADERS)
 			$(CPP) $(CPPFLAGS) -o $(NAME) $(SRCS)
 
-fclean: rm -f $(NAME)
+clean:
+		rm -f $(NAME)
 
-clean: rm fclean
+fclean:
+		rm -f $(NAME)
 
-re: fclean all
-
+re: 		fclean all
 
 .PHONY: re clean fclean all

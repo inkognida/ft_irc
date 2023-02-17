@@ -20,6 +20,6 @@
 # include "Server.hpp"
 # include <fcntl.h>
 
-
+// PARSE FUNCTIONS
 bool                        correctName(std::string name);
 std::vector<std::string>    splitChannelArgs(std::string &names);

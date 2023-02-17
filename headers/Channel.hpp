@@ -10,17 +10,17 @@ public:
     Channel(std::string, std::string);
     ~Channel();
 
-    void                setName(std::string);
-    void                setPass(std::string);
-    void                setTopic(std::string);
+    void                        setName(std::string);
+    void                        setPass(std::string);
+    void                        setTopic(std::string);
 
-    void                addMode(std::string);
-    void                deleteMode(std::string);
+    void                        addMode(std::string);
+    void                        deleteMode(std::string);
 
-    void                addUser(User&);
-    void                addOperator(User&);
-    void                deleteUser(User&);
-    void                deleteOper(User&);
+    void                        addUser(User&);
+    void                        addOperator(User&);
+    void                        deleteUser(User&);
+    void                        deleteOper(User&);
 
     std::string                 getUsersInfo(std::map<int, User>&) const;
     std::string                 getOperatorsInfo(std::map<int, User>&) const;
